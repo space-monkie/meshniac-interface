@@ -12,8 +12,8 @@ Sources: this library; module firmware
 module schematic *Cloudify Log — Main Board v1.5* (2025-03-08);
 `meshniac-v3-lora-/docs/10_architecture.md`.
 
-> The README red-lines apply: the wire protocol is a contract with flashed
-> m1 hardware and the module firmware. Do not "fix" `cofig_wifi_reply`; the
+> The README red-lines apply: the wire protocol is a contract with the
+> module firmware and every host that pins this library. Do not "fix" `cofig_wifi_reply`; the
 > device domain runs on IST epoch (+19800); pin the library by tag. Module
 > wire changes bump the library tag and ALL host pins together.
 

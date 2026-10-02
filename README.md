@@ -33,10 +33,10 @@ Design: the monorepo's `docs/design/mesh_membership_v1.md`.
 
 ## RED-LINES (read before editing anything here)
 
-- **Byte-exact m1 parity.** The wire protocol (envelope, mTyp grammar,
-  reply table) is the contract with flashed m1 hardware and the module
-  firmware — including the `cofig_wifi_reply` typo (yes, "cofig"; it is
-  load-bearing on the wire; never "fix" it).
+- **Byte-exact wire parity.** The wire protocol (envelope, mTyp grammar,
+  reply table) is the contract between every host that pins this library
+  and the module firmware — including the `cofig_wifi_reply` typo (yes,
+  "cofig"; it is load-bearing on the wire; never "fix" it).
 - **IST epoch (+19800).** The whole device domain runs on IST epoch.
   This library holds two homes of that math: the `- 19800` UTC
   conversion in the timestamp handler and the `rtc.offset` line near it.
@@ -72,7 +72,7 @@ While actively hacking on the library, point the consumer at this clone
 instead of a tag:
 
     lib_deps =
-        symlink:///Users/bobbyjose/Documents/code/github/iotnauts.flutter.dev@gmail.com/meshniac-interface
+        symlink:///path/to/your/checkout/meshniac-interface
 
 then restore the tag pin before committing the consumer. Never commit a
 `symlink://` pin.

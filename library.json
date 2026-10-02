@@ -1,7 +1,7 @@
 {
   "name": "MeshniacInterface",
   "version": "2.0.0",
-  "description": "HOST-side UART bridge to the Meshniac flexible mesh network module (U2 ESP-NOW/LoRa, U4 main, U6 gateway). Extracted byte-identical from the meshniac-v3-lora monorepo on 2026-09-01. v2.0.0 (2026-09-30): mesh membership by network name + password (config_mesh / mesh_status); slot lists and config_mesh_key removed.",
+  "description": "Host-side UART bridge to the Meshniac flexible mesh network module (ESP-NOW + LoRa mesh, MQTT gateway): framing, JSON message handling, RTC seeding, configuration commands (Wi-Fi, MQTT, timezone, network name + password) and callbacks for the host firmware.",
   "keywords": ["meshniac", "mesh", "uart", "esp32", "iot"],
   "repository": { "type": "git", "url": "https://github.com/space-monkie/meshniac-interface.git" },
   "authors": [{ "name": "Bobby Jose", "maintainer": true }],

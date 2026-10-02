@@ -466,7 +466,7 @@ void MeshniacInterface::deserialize_module_data(String module_data_json_str){
         status_to_sm
         json{"mTyp":"status_to_sm","wifi":"0","mqtt":"0","rtc_gw":"0","rtc_local_nw":"0","isRTC_valid":"0","timestring":"00:24:26","datestring":"Jan 01 2000","deviceCount":"1","gw_mac":"B4:8A:0A:9A:C5:EC","meshInet":"0","meshConn":"1"}
         status_update_wifi
-        json{"mTyp":"status_update_wifi","status_wifi":"bad","ssid":"IOTNAUTS#1"}
+        json{"mTyp":"status_update_wifi","status_wifi":"bad","ssid":"MyWiFi"}
         deviceMode
         json{"mTyp":"deviceMode","mode":"normal"}
         reply_HMI_espNowMCU
@@ -484,7 +484,7 @@ void MeshniacInterface::deserialize_module_data(String module_data_json_str){
         config_key_code_reply
         json{"mTyp":"config_key_code_reply","status":"success","key_code":"3535"}
         cofig_wifi_reply
-        json{"mTyp":"cofig_wifi_reply","status":"success","ssid":"IOTNAUTS#1"}
+        json{"mTyp":"cofig_wifi_reply","status":"success","ssid":"MyWiFi"}
         config_timezone_reply
         json{"mTyp":"config_timezone_reply","status":"success","timezone":"Africa/Accra","offset":"0"}
         config_node_id_reply
