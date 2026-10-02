@@ -79,13 +79,28 @@ then restore the tag pin before committing the consumer. Never commit a
 
 ## Docs
 
+- `CHANGELOG.md` — per-tag changes.
 - `docs/host_interface_reference.md` — what a host must implement on the
   wire: J2 pins, 5 V power, framing, envelope, mode gating, every
   command/reply pair, minimal bring-up sequence. Derived from this library
   plus the module firmware and schematic. When a wire change ships, update
   it in the same commit as the tag bump.
 
+## Install
+
+PlatformIO (recommended) — pin a tag in `platformio.ini`:
+
+    lib_deps =
+        https://github.com/space-monkie/meshniac-interface.git#v2.0.1
+
+Arduino IDE — download the repository as a zip from the tag you want, then
+Sketch → Include Library → Add .ZIP Library. Needs ArduinoJson 6 and
+ESP32Time from the Library Manager. Start from `examples/MinimalHost`.
+
+Not published to the PlatformIO or Arduino registries yet.
+
 ## Rights
 
-Proprietary. All rights reserved. Private repository — do not publish or
-redistribute.
+Proprietary. © 2026 IoTnauts. All rights reserved — see `LICENSE.txt`.
+The source is published for reference; no licence to use, copy, modify or
+redistribute is granted without written permission.

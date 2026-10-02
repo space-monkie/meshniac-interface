@@ -1,10 +1,12 @@
 {
   "name": "MeshniacInterface",
-  "version": "2.0.0",
+  "version": "2.0.1",
   "description": "Host-side UART bridge to the Meshniac flexible mesh network module (ESP-NOW + LoRa mesh, MQTT gateway): framing, JSON message handling, RTC seeding, configuration commands (Wi-Fi, MQTT, timezone, network name + password) and callbacks for the host firmware.",
   "keywords": ["meshniac", "mesh", "uart", "esp32", "iot"],
   "repository": { "type": "git", "url": "https://github.com/space-monkie/meshniac-interface.git" },
   "authors": [{ "name": "Bobby Jose", "maintainer": true }],
+  "license": "Proprietary",
+  "homepage": "https://github.com/space-monkie/meshniac-interface",
   "frameworks": "arduino",
   "platforms": "espressif32",
   "headers": "meshniac_interface.h",
@@ -12,5 +14,6 @@
     { "owner": "bblanchon", "name": "ArduinoJson", "version": "^6.19.4" },
     { "owner": "fbiego", "name": "ESP32Time", "version": "^2.0.0" }
   ],
-  "export": { "exclude": [".DS_Store", "**/.DS_Store", "*.bak*", ".pio"] }
+  "examples": "examples/*/*.ino",
+  "export": { "exclude": [".DS_Store", "**/.DS_Store", "*.bak*", ".pio", ".vscode"] }
 }

@@ -1,0 +1,15 @@
+MeshniacInterface
+Copyright (c) 2026 IoTnauts (Bobby Jose). All rights reserved.
+
+This source code is published for reference and for use with Meshniac
+hardware by its licensees. No licence is granted to use, copy, modify,
+merge, publish, distribute, sublicense or sell this software, in whole or
+in part, without prior written permission from IoTnauts.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY ARISING FROM THE USE OF THE SOFTWARE.
+
+Contact: iotnautsdev00@gmail.com
