@@ -14,17 +14,22 @@ History before v1.0.0 lives in that monorepo.
 
 | Project | Env | Pin |
 |---|---|---|
-| HOST m1 (`HOST_m1-t2-r16_v1`, ESP32 DevKit — flashed field hardware) | `esp32doit-devkit-v1` | `#v1.0.0` |
-| HOST m2 (`host_m2`, ESP32-S3 — no hardware exists yet) | `m2_esp32s3` | `#v1.0.0` |
+| HOST m1 (`HOST_m1-t2-r16_v1`, ESP32 DevKit — bench hardware; NOTHING deployed as of 2026-09-30) | `esp32doit-devkit-v1` | `#v2.0.0` |
+| HOST m2 (`host_m2`, ESP32-S3 — no hardware exists yet) | `m2_esp32s3` | `#v2.0.0` |
+| HOST M3 (`host_m3`, ESP32-S3 dev board — design phase, fw scaffold only) | `m3_esp32s3` | `#v2.0.0` |
 
 Consumed via `platformio.ini`:
 
     lib_deps =
-        https://github.com/space-monkie/meshniac-interface.git#v1.0.0
+        https://github.com/space-monkie/meshniac-interface.git#v2.0.0
 
-m1 is flashed field hardware: it stays on its pinned tag. If m2 needs
-interface changes, cut a new tag and move ONLY m2's pin — divergence is
-deliberate and visible, never silent copy drift.
+Nothing is deployed (Bobby, 2026-09-30): every host is bench hardware, so a
+wire change may move ALL host pins in the same release. If a host must stay
+behind, cut a new tag and move only the pins that take it — divergence is
+deliberate and visible, never silent copy drift. Current wire: **v2.0.0
+(2026-09-30)** — mesh membership by network name + password
+(`config_mesh` / `mesh_status`); slot lists and `config_mesh_key` removed.
+Design: the monorepo's `docs/design/mesh_membership_v1.md`.
 
 ## RED-LINES (read before editing anything here)
 
@@ -52,6 +57,15 @@ deliberate and visible, never silent copy drift.
 4. Bump the `#vX.Y.Z` pin only in the consumer(s) that should take it,
    in the monorepo.
 
+Wire-change log:
+
+- **2026-09-30 — v2.0.0.** The module wire changed: mesh membership
+  (`config_mesh` / `config_mesh_reply` / `req_mesh_status` / `mesh_status`)
+  replaces `config_addr`, `config_lora_addr`, `config_mesh_key` and the
+  `b1..b5` / `l1..l5` slot lists (also gone from `module_eeprom_to_host`).
+  Nothing was deployed, so all three hosts (m1, m2, M3) moved to
+  `#v2.0.0` together.
+
 ## Developing against a local checkout
 
 While actively hacking on the library, point the consumer at this clone
@@ -62,6 +76,14 @@ instead of a tag:
 
 then restore the tag pin before committing the consumer. Never commit a
 `symlink://` pin.
+
+## Docs
+
+- `docs/host_interface_reference.md` — what a host must implement on the
+  wire: J2 pins, 5 V power, framing, envelope, mode gating, every
+  command/reply pair, minimal bring-up sequence. Derived from this library
+  plus the module firmware and schematic. When a wire change ships, update
+  it in the same commit as the tag bump.
 
 ## Rights
 

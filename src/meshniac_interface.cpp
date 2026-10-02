@@ -249,15 +249,6 @@ void MeshniacInterface::mesh_transmit_to_node_custom(String to_node, StaticJsonD
     }
 }
 
-void MeshniacInterface::mesh_broadcast_to_all_allowed_node(StaticJsonDocument<200> jsonPayload)
-{
-    mesh_transmit_to_node_custom(allowed_devices_b1, jsonPayload);
-    mesh_transmit_to_node_custom(allowed_devices_b2, jsonPayload);
-    mesh_transmit_to_node_custom(allowed_devices_b3, jsonPayload);
-    mesh_transmit_to_node_custom(allowed_devices_b4, jsonPayload);
-    mesh_transmit_to_node_custom(allowed_devices_b5, jsonPayload);
-}
-
 String MeshniacInterface::mesh_get_to_storage(StaticJsonDocument<200> jsonPayload, String timestampString)
 {
     String pubT_local = "str/" + node_id;
@@ -367,15 +358,6 @@ void MeshniacInterface::mesh_en_transmit_to_node_custom(String to_node, StaticJs
     }
 }
 
-void MeshniacInterface::mesh_en_broadcast_to_all_allowed_node(StaticJsonDocument<200> jsonPayload)
-{
-    mesh_en_transmit_to_node_custom(allowed_devices_b1, jsonPayload);
-    mesh_en_transmit_to_node_custom(allowed_devices_b2, jsonPayload);
-    mesh_en_transmit_to_node_custom(allowed_devices_b3, jsonPayload);
-    mesh_en_transmit_to_node_custom(allowed_devices_b4, jsonPayload);
-    mesh_en_transmit_to_node_custom(allowed_devices_b5, jsonPayload);
-}
-
 // ─────────────────────────────────────────────────────
 // Big Payload transmit functions (mTyp: "bl")
 // WiFi/MQTT ONLY — NO ESP-NOW (exceeds 250-byte limit),
@@ -438,15 +420,6 @@ void MeshniacInterface::mesh_bl_transmit_to_node_custom(String to_node, DynamicJ
     }
 }
 
-void MeshniacInterface::mesh_bl_broadcast_to_all_allowed_node(DynamicJsonDocument& jsonPayload)
-{
-    mesh_bl_transmit_to_node_custom(allowed_devices_b1, jsonPayload);
-    mesh_bl_transmit_to_node_custom(allowed_devices_b2, jsonPayload);
-    mesh_bl_transmit_to_node_custom(allowed_devices_b3, jsonPayload);
-    mesh_bl_transmit_to_node_custom(allowed_devices_b4, jsonPayload);
-    mesh_bl_transmit_to_node_custom(allowed_devices_b5, jsonPayload);
-}
-
 void MeshniacInterface::verify_unlock_code(String user_provided_key_code){
     /*
         This function sends keycode proveded by the user to the main mcu
@@ -507,7 +480,7 @@ void MeshniacInterface::deserialize_module_data(String module_data_json_str){
         keycode_verify_reply_to_host
         json{"mTyp":"keycode_verify_reply_to_host","data":"success","key_code":"3535"}
         module_eeprom_to_host
-        json{"mTyp":"module_eeprom_to_host","node_id":"20F0ECECC1C3","dvTyp":"","key_code":3535,"b1":"22F0FDECB3F3","b2":"22F0FDECB3F4","b3":"22F0FDECB3F5","b4":"22F0FDECB3F6","b5":"22F0FDECB3F7","timezone":"Asia/Kolkata","offset":"19800","gain":"0","commsValDev2":"0"}
+        json{"mTyp":"module_eeprom_to_host","node_id":"20F0ECECC1C3","dvTyp":"","key_code":3535,"timezone":"Asia/Kolkata","offset":"19800","gain":"0","commsValDev2":"0"}
         config_key_code_reply
         json{"mTyp":"config_key_code_reply","status":"success","key_code":"3535"}
         cofig_wifi_reply
@@ -518,8 +491,11 @@ void MeshniacInterface::deserialize_module_data(String module_data_json_str){
         json{"mTyp":"config_node_id_reply","status":"success","node_id":"0B16212C3742"}
         config_mqtt_reply
         json{"mTyp":"config_mqtt_reply","status":"success","mqttSrvr":"mqtt1.iotnauts.in"}
-        config_addr_reply
-        json{"mTyp":"config_addr_reply","status":"success","b1":"22F0FDECB3F3","b2":"22F0FDECB3F4","b3":"22F0FDECB3F5","b4":"22F0FDECB3F6","b5":"22F0FDECB3F7"}
+        config_mesh_reply
+        json{"mTyp":"config_mesh_reply","status":"success","radio":"nb","name":"shed-a","key_fp":"A31F7C09"}
+        json{"mTyp":"config_mesh_reply","status":"failed","radio":"nb","name":"shed-a","reason":"bad_input"}
+        mesh_status (unsolicited ~3 s after module boot and after every applied config_mesh; also on req_mesh_status)
+        json{"mTyp":"mesh_status","nb_name":"shed-a","nb_key_fp":"A31F7C09","lr_name":"","lr_key_fp":"","rx_ok":12,"rx_bad_tag":0,"rx_replay":0,"rx_wrong_net":3,"rx_bad_len":0,"tx_drop_nb":0,"lr_queue_drops":0,"fw":"m1-mod-2026.09.30-mesh1"}
         andro_smRomReq (forwarded from app via gateway)
         json{"mTyp":"andro_smRomReq","reqType":"req_smRom_dataset1"}
     
@@ -594,11 +570,6 @@ void MeshniacInterface::deserialize_module_data(String module_data_json_str){
         // store the Module's Main_mcu's eeprom
         String node_id_temp = module_data_json["node_id"];
         String key_code_temp = module_data_json["key_code"];
-        String broadcast_address_b1_temp = module_data_json["b1"];
-        String broadcast_address_b2_temp = module_data_json["b2"];
-        String broadcast_address_b3_temp = module_data_json["b3"];
-        String broadcast_address_b4_temp = module_data_json["b4"];
-        String broadcast_address_b5_temp = module_data_json["b5"];
         String timezone_temp = module_data_json["timezone"];
         String offset_temp = module_data_json["offset"];
         // String gain_temp = module_data_json["gain"];
@@ -606,26 +577,12 @@ void MeshniacInterface::deserialize_module_data(String module_data_json_str){
 
         node_id = node_id_temp;
         key_code_after_successful_unlock = key_code_temp;
-        broadcast_address_b1 = broadcast_address_b1_temp;
-        broadcast_address_b2 = broadcast_address_b2_temp;
-        broadcast_address_b3 = broadcast_address_b3_temp;
-        broadcast_address_b4 = broadcast_address_b4_temp;
-        broadcast_address_b5 = broadcast_address_b5_temp;
-        String lora_address_b1_temp = module_data_json["l1"] | "";
-        String lora_address_b2_temp = module_data_json["l2"] | "";
-        String lora_address_b3_temp = module_data_json["l3"] | "";
-        String lora_address_b4_temp = module_data_json["l4"] | "";
-        String lora_address_b5_temp = module_data_json["l5"] | "";
-        lora_address_b1 = lora_address_b1_temp;
-        lora_address_b2 = lora_address_b2_temp;
-        lora_address_b3 = lora_address_b3_temp;
-        lora_address_b4 = lora_address_b4_temp;
-        lora_address_b5 = lora_address_b5_temp;
         timezone = timezone_temp;
         offset_string = offset_temp;
 
-        /* PATCH slots: notify main.cpp that a fresh eeprom snapshot
-           (b1..b5 / l1..l5 / tz) was stored so it can refresh the app */
+        /* notify main.cpp that a fresh eeprom snapshot (node_id / key_code /
+           tz / offset) was stored so it can refresh the app. The b1..b5 /
+           l1..l5 slot lists left this message in v2.0.0 (mesh membership) */
         trigger_msg1 = "module_eeprom_updated";
      
         
@@ -853,115 +810,76 @@ void MeshniacInterface::deserialize_module_data(String module_data_json_str){
         }
 
     }
-    if(msgType == "config_addr_reply"){
-    /*
-        This function is to configure the MQTT
-
-
-            ---------format---------
-        1)To Module gateway_mcu
-        {
-            "mTyp":"config_addr",
-            "key_code":"<key_code>"
-            "b1":"<b1>",
-            "b2":"<b2>",
-            "b3":"<b3>",
-            "b4":"<b4>",
-            "b5":"<b5>"
-
-        }
-
-        2)Reply to the host
-        {
-            "mTyp":"config_addr_reply",
-            "status":"success/failed",
-             "b1":"<b1>",
-            "b2":"<b2>",
-            "b3":"<b3>",
-            "b4":"<b4>",
-            "b5":"<b5>"
-        }
-    */
-        String status = module_data_json["status"];
-        if(status == "success"){
-            String b1_temp = module_data_json["b1"];
-            String b2_temp = module_data_json["b2"];
-            String b3_temp = module_data_json["b3"];
-            String b4_temp = module_data_json["b4"];
-            String b5_temp = module_data_json["b5"];
-            broadcast_address_b1 = b1_temp;
-            broadcast_address_b2 = b2_temp;
-            broadcast_address_b3 = b3_temp;
-            broadcast_address_b4 = b4_temp;
-            broadcast_address_b5 = b5_temp;
-            trigger_msg1 = "addr_config_success";
-            trigger_msg2 = b1_temp;
-            trigger_msg3 = b2_temp;
-            trigger_msg4 = b3_temp;
-            trigger_msg5 = b4_temp;
-            trigger_msg6 = b5_temp;
-        }
-        if(status == "failed"){
-            trigger_msg1 = "addr_config_failed";
-        }
-    }
-    if(msgType == "config_lora_addr_reply"){
+    if(msgType == "config_mesh_reply"){
         /*
-            Reply from MAIN_MCU after LoRa address configuration attempt.
+            Reply after a config_mesh attempt: MAIN_MCU's verdict, with key_fp
+            added by the ESP_NOW MCU once it has applied the key. Format in
+            config_mesh(). Wire freeze: docs/design/mesh_membership_v1.md §4.6
 
                 ---------format---------
             Reply from module:
             {
-                "mTyp":"config_lora_addr_reply",
+                "mTyp":"config_mesh_reply",
                 "status":"success/failed",
-                "l1":"<l1>",
-                "l2":"<l2>",
-                "l3":"<l3>",
-                "l4":"<l4>",
-                "l5":"<l5>"
+                "radio":"nb|lr",
+                "name":"<name>",
+                "key_fp":"<8 hex>"      (success; "" when that radio was cleared)
+                "reason":"bad_input"    (failed; may be absent)
             }
         */
         String status = module_data_json["status"];
+        String radio_temp = module_data_json["radio"] | "";
+        String name_temp = module_data_json["name"] | "";
         if(status == "success"){
-            String l1_temp = module_data_json["l1"];
-            String l2_temp = module_data_json["l2"];
-            String l3_temp = module_data_json["l3"];
-            String l4_temp = module_data_json["l4"];
-            String l5_temp = module_data_json["l5"];
-            lora_address_b1 = l1_temp;
-            lora_address_b2 = l2_temp;
-            lora_address_b3 = l3_temp;
-            lora_address_b4 = l4_temp;
-            lora_address_b5 = l5_temp;
-            trigger_msg1 = "lora_addr_config_success";
-            trigger_msg2 = l1_temp;
-            trigger_msg3 = l2_temp;
-            trigger_msg4 = l3_temp;
-            trigger_msg5 = l4_temp;
-            trigger_msg6 = l5_temp;
+            String key_fp_temp = module_data_json["key_fp"] | "";
+            if(radio_temp == "nb"){
+                mesh_nb_name = name_temp;
+                mesh_nb_key_fp = key_fp_temp;
+            }
+            if(radio_temp == "lr"){
+                mesh_lr_name = name_temp;
+                mesh_lr_key_fp = key_fp_temp;
+            }
+            trigger_msg1 = "mesh_config_success";
+            trigger_msg2 = radio_temp;
+            trigger_msg3 = name_temp;
+            trigger_msg4 = key_fp_temp;
         }
         if(status == "failed"){
-            trigger_msg1 = "lora_addr_config_failed";
+            String reason_temp = module_data_json["reason"] | "";
+            trigger_msg1 = "mesh_config_failed";
+            trigger_msg2 = radio_temp;
+            trigger_msg3 = reason_temp;
         }
     }
-    if(msgType == "config_mesh_key_reply"){
+    if(msgType == "mesh_status"){
         /*
-            Reply from MAIN_MCU after mesh key configuration attempt.
+            Mesh membership + radio counters from the ESP_NOW MCU: pushed ~3 s
+            after module boot, after every applied config_mesh, and on
+            req_mesh_status. Fingerprints are "" while that radio is
+            unconfigured. The raw line is kept verbatim (mesh_status_json) so
+            a host can forward it to the app unchanged.
 
                 ---------format---------
-            Reply from module:
             {
-                "mTyp":"config_mesh_key_reply",
-                "status":"success/failed"
+                "mTyp":"mesh_status",
+                "nb_name":"<name>","nb_key_fp":"<8 hex>",
+                "lr_name":"<name>","lr_key_fp":"<8 hex>",
+                "rx_ok":n,"rx_bad_tag":n,"rx_replay":n,"rx_wrong_net":n,"rx_bad_len":n,
+                "tx_drop_nb":n,"lr_queue_drops":n,
+                "fw":"<module firmware version>"
             }
         */
-        String status = module_data_json["status"];
-        if(status == "success"){
-            trigger_msg1 = "mesh_key_config_success";
-        }
-        if(status == "failed"){
-            trigger_msg1 = "mesh_key_config_failed";
-        }
+        String nb_name_temp = module_data_json["nb_name"] | "";
+        String nb_key_fp_temp = module_data_json["nb_key_fp"] | "";
+        String lr_name_temp = module_data_json["lr_name"] | "";
+        String lr_key_fp_temp = module_data_json["lr_key_fp"] | "";
+        mesh_nb_name = nb_name_temp;
+        mesh_nb_key_fp = nb_key_fp_temp;
+        mesh_lr_name = lr_name_temp;
+        mesh_lr_key_fp = lr_key_fp_temp;
+        mesh_status_json = module_data_json_str;
+        trigger_msg1 = "mesh_status_updated";
     }
     if(msgType == "deviceMode"){
         //1->configure mode ,2->loading mode, 3->normal modes
@@ -1335,119 +1253,72 @@ void MeshniacInterface::mqtt2_config(String current_keycode, String mqttSrvr2, S
     uart1_println(msg_for_main_mcu_charJson);
 }
 
-void MeshniacInterface::modify_address(String current_keycode, String b1, String b2, String b3, String b4, String b5){
+void MeshniacInterface::config_mesh(String current_keycode, String radio, String name, String key_hex){
     /*
-        This function is to configure the MQTT
-
+        This function configures mesh membership for ONE radio: "nb" (nearby,
+        ESP-NOW) or "lr" (long-range, LoRa). A network is a name + a 32-hex
+        AES-128 key shared by every member; the module derives the on-air
+        header from the name and authenticates every frame with the key.
+        key_hex = "" clears that radio (then name may be "" too).
+        Wire freeze: docs/design/mesh_membership_v1.md §4.6 (v2.0.0, 2026-09-30)
 
             ---------format---------
-        1)To Module gateway_mcu
+        1)To Module ESP_NOW MCU (U2 validates, forwards to main_MCU without the key)
         {
-            "mTyp":"config_addr",
-            "key_code":"<key_code>"
-            "b1":"<b1>",
-            "b2":"<b2>",
-            "b3":"<b3>",
-            "b4":"<b4>",
-            "b5":"<b5>"
-
-        }
-
-        2)Reply to the host
-        {
-            "mTyp":"config_addr_reply",
-            "status":"success/failed",
-             "b1":"<b1>",
-            "b2":"<b2>",
-            "b3":"<b3>",
-            "b4":"<b4>",
-            "b5":"<b5>"
-        }
-    */
-    StaticJsonDocument<600> msg_for_main_mcu;
-    msg_for_main_mcu["mTyp"] = "config_addr";
-    msg_for_main_mcu["key_code"] = current_keycode;
-    msg_for_main_mcu["b1"] = b1;
-    msg_for_main_mcu["b2"] = b2;
-    msg_for_main_mcu["b3"] = b3;
-    msg_for_main_mcu["b4"] = b4;
-    msg_for_main_mcu["b5"] = b5;
-    
-    char msg_for_main_mcu_charJson[600];
-    serializeJson(msg_for_main_mcu, msg_for_main_mcu_charJson);
-    Serial.println(msg_for_main_mcu_charJson);
-    uart1_println(msg_for_main_mcu_charJson);
-}
-
-void MeshniacInterface::modify_lora_address(String current_keycode, String l1, String l2, String l3, String l4, String l5){
-    /*
-        This function is to configure the LoRa address list
-
-
-            ---------format---------
-        1)To Module main_MCU (via ESP_NOW MCU)
-        {
-            "mTyp":"config_lora_addr",
-            "key_code":"<key_code>"
-            "l1":"<l1>",
-            "l2":"<l2>",
-            "l3":"<l3>",
-            "l4":"<l4>",
-            "l5":"<l5>"
-
-        }
-
-        2)Reply to the host
-        {
-            "mTyp":"config_lora_addr_reply",
-            "status":"success/failed",
-             "l1":"<l1>",
-            "l2":"<l2>",
-            "l3":"<l3>",
-            "l4":"<l4>",
-            "l5":"<l5>"
-        }
-    */
-    StaticJsonDocument<600> msg_for_main_mcu;
-    msg_for_main_mcu["mTyp"] = "config_lora_addr";
-    msg_for_main_mcu["key_code"] = current_keycode;
-    msg_for_main_mcu["l1"] = l1;
-    msg_for_main_mcu["l2"] = l2;
-    msg_for_main_mcu["l3"] = l3;
-    msg_for_main_mcu["l4"] = l4;
-    msg_for_main_mcu["l5"] = l5;
-    
-    char msg_for_main_mcu_charJson[600];
-    serializeJson(msg_for_main_mcu, msg_for_main_mcu_charJson);
-    Serial.println(msg_for_main_mcu_charJson);
-    uart1_println(msg_for_main_mcu_charJson);
-}
-
-void MeshniacInterface::config_mesh_key(String current_keycode, String mesh_key_hex){
-    /*
-        This function is to configure the AES-128 mesh encryption key.
-        The key must be 32 hex characters (16 bytes).
-        All nodes in the mesh must share the same key.
-
-            ---------format---------
-        1)To Module main_MCU (via ESP_NOW MCU)
-        {
-            "mTyp":"config_mesh_key",
+            "mTyp":"config_mesh",
             "key_code":"<key_code>",
-            "mesh_key":"<32 hex chars, e.g. A31F7C09E25B88D46AF03EC7119D45B8>"
+            "radio":"nb|lr",
+            "name":"<network name, <= 32 chars>",
+            "key":"<32 hex chars, e.g. A31F7C09E25B88D46AF03EC7119D45B8, or "" = clear>"
         }
 
         2)Reply to the host
         {
-            "mTyp":"config_mesh_key_reply",
-            "status":"success/failed"
+            "mTyp":"config_mesh_reply",
+            "status":"success/failed",
+            "radio":"nb|lr",
+            "name":"<name>",
+            "key_fp":"<first 8 hex of SHA-256(key), "" when cleared>"   (success only)
+            "reason":"bad_input/..."                                       (failed only)
         }
+        After every applied change the module also pushes an unsolicited mesh_status.
     */
     StaticJsonDocument<300> msg_for_main_mcu;
-    msg_for_main_mcu["mTyp"] = "config_mesh_key";
+    msg_for_main_mcu["mTyp"] = "config_mesh";
     msg_for_main_mcu["key_code"] = current_keycode;
-    msg_for_main_mcu["mesh_key"] = mesh_key_hex;
-    
+    msg_for_main_mcu["radio"] = radio;
+    msg_for_main_mcu["name"] = name;
+    msg_for_main_mcu["key"] = key_hex;
+
+    char msg_for_main_mcu_charJson[300];
+    serializeJson(msg_for_main_mcu, msg_for_main_mcu_charJson);
+    uart1_println(msg_for_main_mcu_charJson);
+
+    /* debug print REDACTED (same idiom as config_mqtt2): the mesh key never
+       goes to USB. Re-serialise the same document with the key masked. */
+    msg_for_main_mcu["key"] = "***";
+    serializeJson(msg_for_main_mcu, msg_for_main_mcu_charJson);
+    Serial.println(msg_for_main_mcu_charJson);
+}
+
+void MeshniacInterface::req_mesh_status(){
+    /*
+        Ask the module (ESP_NOW MCU) for its mesh membership + radio counters.
+        Not key-code gated: the reply carries names and fingerprints only.
+        The module also pushes mesh_status unsolicited ~3 s after boot and
+        after every applied config_mesh.
+
+            ---------format---------
+        1)To Module ESP_NOW MCU
+        {
+            "mTyp":"req_mesh_status"
+        }
+
+        2)Reply to the host: mesh_status (see deserialize_module_data)
+    */
+    StaticJsonDocument<300> msg_for_main_mcu;
+    msg_for_main_mcu["mTyp"] = "req_mesh_status";
+
     char msg_for_main_mcu_charJson[300];
     serializeJson(msg_for_main_mcu, msg_for_main_mcu_charJson);
     Serial.println(msg_for_main_mcu_charJson);

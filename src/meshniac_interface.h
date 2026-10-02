@@ -102,23 +102,13 @@ public:
     // Preferences preferences;
 
     // String sm_eeprom_init = "";
-    String allowed_devices_b1 = "";
-    String allowed_devices_b2 = "";
-    String allowed_devices_b3 = "";
-    String allowed_devices_b4 = "";
-    String allowed_devices_b5 = "";
-
-    String broadcast_address_b1 = "";
-    String broadcast_address_b2 = "";
-    String broadcast_address_b3 = "";
-    String broadcast_address_b4 = "";
-    String broadcast_address_b5 = "";
-
-    String lora_address_b1 = "";
-    String lora_address_b2 = "";
-    String lora_address_b3 = "";
-    String lora_address_b4 = "";
-    String lora_address_b5 = "";
+    // Mesh membership state, from the module's last config_mesh_reply /
+    // mesh_status (v2.0.0). Names + key fingerprints only, never a key.
+    String mesh_nb_name = "";
+    String mesh_nb_key_fp = "";
+    String mesh_lr_name = "";
+    String mesh_lr_key_fp = "";
+    String mesh_status_json = "";      // the last raw mesh_status line, verbatim, for forwarding to the app
    
 
     String node_id = "";
@@ -175,20 +165,17 @@ public:
    
     void mesh_transmit_to_network(StaticJsonDocument<200> jsonPayload);
     void mesh_transmit_to_node_custom(String to_node, StaticJsonDocument<200> jsonPayload);
-    void mesh_broadcast_to_all_allowed_node(StaticJsonDocument<200> jsonPayload);
     String mesh_get_to_storage(StaticJsonDocument<200> jsonPayload, String timestampString);
     void mesh_transmit_as_alarm(StaticJsonDocument<200> jsonPayload);
 
     // ESP-NOW only transmit functions (mTyp: "en") — same as pl but skips LoRa
     void mesh_en_transmit_to_network(StaticJsonDocument<200> jsonPayload);
     void mesh_en_transmit_to_node_custom(String to_node, StaticJsonDocument<200> jsonPayload);
-    void mesh_en_broadcast_to_all_allowed_node(StaticJsonDocument<200> jsonPayload);
 
     // Big payload transmit functions (mTyp: "bl") — WiFi/MQTT only (NO ESP-NOW, NO LoRa)
     // Uses DynamicJsonDocument to support js_data up to 1200 bytes
     void mesh_bl_transmit_to_network(DynamicJsonDocument& jsonPayload);
     void mesh_bl_transmit_to_node_custom(String to_node, DynamicJsonDocument& jsonPayload);
-    void mesh_bl_broadcast_to_all_allowed_node(DynamicJsonDocument& jsonPayload);
 
     // Librified versions of Serial methods
     int available();
@@ -205,9 +192,10 @@ public:
     void manuf_dev_conf(String current_keycode, String manuf_code, String now_node_id);
     void mqtt_config(String current_keycode, String mqttSrvr, String mqtt_usrnm, String mqtt_passwd);
     void mqtt2_config(String current_keycode, String mqttSrvr2, String mqtt_usrnm2, String mqtt_passwd2);
-    void modify_address(String current_keycode, String b1, String b2, String b3, String b4, String b5);
-    void modify_lora_address(String current_keycode, String l1, String l2, String l3, String l4, String l5);
-    void config_mesh_key(String current_keycode, String mesh_key_hex);
+    // Mesh membership (v2.0.0, docs/design/mesh_membership_v1.md §4.6): one network per radio,
+    // identified by name + 32-hex AES-128 key. Replies land in mesh_nb_*/mesh_lr_* + trigger_msg1.
+    void config_mesh(String current_keycode, String radio /*"nb"|"lr"*/, String name, String key_hex /*32 hex or ""=clear*/);
+    void req_mesh_status();
     int get_module_mode(); // 1->configure mode ,2->loading mode, 3->normal modes
     // void set_module_mode_to_config(); // 1->configure mode ,2->loading mode, 3->normal modes
     // void set_module_mode_to_loading(); // 1->configure mode ,2->loading mode, 3->normal modes
