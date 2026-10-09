@@ -38,6 +38,7 @@
 
 // meshniac_interface.cpp
 #include "meshniac_interface.h"
+#include <initializer_list>
 
 // Helper function to convert String to long, returns 0 if conversion fails
 long stringToLongOrZero(String str) {
@@ -63,6 +64,22 @@ long stringToLongOrZero(String str) {
 // deviceInteractions.js freshPlId, app local_mqtt_service.dart
 // freshPlId / kPlIdMax -- same range in all four.
 static int32_t mesh_new_pl_id() { return (int32_t)(esp_random() % 2147483646UL + 1UL); }
+
+// USB debug print of a host -> module config frame with its secrets masked
+// (v2.1.0): key codes, passwords, the manufacturer code and the mesh key
+// never go to USB. Call it AFTER uart1_println() of the clear frame: it sets
+// each named field to "***" in the same document, re-serialises into the
+// same buffer and prints that, so the UART bytes never change. Only the
+// debug line moved to just after the send. mqtt2_config prints a one-line
+// summary instead.
+template <size_t N>
+static void print_frame_masked(JsonDocument &doc, char (&buf)[N],
+                               std::initializer_list<const char *> secrets)
+{
+    for (const char *k : secrets) doc[k] = "***";
+    serializeJson(doc, buf, N);
+    Serial.println(buf);
+}
 
 MeshniacInterface::MeshniacInterface()
 {
@@ -477,8 +494,8 @@ void MeshniacInterface::verify_unlock_code(String user_provided_key_code){
     
     char msg_for_main_mcu_charJson[600];
     serializeJson(msg_for_main_mcu, msg_for_main_mcu_charJson);
-    Serial.println(msg_for_main_mcu_charJson);
     uart1_println(msg_for_main_mcu_charJson);
+    print_frame_masked(msg_for_main_mcu, msg_for_main_mcu_charJson, {"key_code"});
 }
 
 void MeshniacInterface::deserialize_module_data(String module_data_json_str){
@@ -559,7 +576,10 @@ void MeshniacInterface::deserialize_module_data(String module_data_json_str){
 
     */  
         String is_key_code_match = module_data_json["data"];
-        Serial.println(module_data_json_str);
+        /* debug print MASKED (v2.1.0): mTyp + data only. The line's key_code
+           (the correct code on success, the attempted one on failure) never
+           goes to USB. */
+        Serial.println(msgType + " data=" + is_key_code_match);
         if(is_key_code_match == "success"){
             // key_code provided the use is match
             String correct_key_code = module_data_json["key_code"];
@@ -1099,8 +1119,8 @@ void MeshniacInterface::config_key_code(String current_key_code, String new_key_
     
     char msg_for_main_mcu_charJson[600];
     serializeJson(msg_for_main_mcu, msg_for_main_mcu_charJson);
-    Serial.println(msg_for_main_mcu_charJson);
     uart1_println(msg_for_main_mcu_charJson);
+    print_frame_masked(msg_for_main_mcu, msg_for_main_mcu_charJson, {"current_key_code", "new_key_code"});
 }
 void MeshniacInterface::config_wifi(String current_keycode, String ssid, String password){
     /*
@@ -1131,8 +1151,8 @@ void MeshniacInterface::config_wifi(String current_keycode, String ssid, String 
     
     char msg_for_main_mcu_charJson[600];
     serializeJson(msg_for_main_mcu, msg_for_main_mcu_charJson);
-    Serial.println(msg_for_main_mcu_charJson);
     uart1_println(msg_for_main_mcu_charJson);
+    print_frame_masked(msg_for_main_mcu, msg_for_main_mcu_charJson, {"key_code", "password"});
         
 }
 
@@ -1167,8 +1187,8 @@ void MeshniacInterface::config_timezone(String current_keycode,String timezone, 
     
     char msg_for_main_mcu_charJson[600];
     serializeJson(msg_for_main_mcu, msg_for_main_mcu_charJson);
-    Serial.println(msg_for_main_mcu_charJson);
     uart1_println(msg_for_main_mcu_charJson);
+    print_frame_masked(msg_for_main_mcu, msg_for_main_mcu_charJson, {"key_code"});
 }
 
 void MeshniacInterface::manuf_dev_conf(String current_keycode, String manuf_code, String new_node_id){
@@ -1200,8 +1220,8 @@ void MeshniacInterface::manuf_dev_conf(String current_keycode, String manuf_code
     
     char msg_for_main_mcu_charJson[600];
     serializeJson(msg_for_main_mcu, msg_for_main_mcu_charJson);
-    Serial.println(msg_for_main_mcu_charJson);
     uart1_println(msg_for_main_mcu_charJson);
+    print_frame_masked(msg_for_main_mcu, msg_for_main_mcu_charJson, {"key_code", "manuf_code"});
 }
  
 void MeshniacInterface::mqtt_config(String current_keycode, String mqttSrvr, String mqtt_usrnm, String mqtt_passwd){
@@ -1235,8 +1255,8 @@ void MeshniacInterface::mqtt_config(String current_keycode, String mqttSrvr, Str
     
     char msg_for_main_mcu_charJson[600];
     serializeJson(msg_for_main_mcu, msg_for_main_mcu_charJson);
-    Serial.println(msg_for_main_mcu_charJson);
     uart1_println(msg_for_main_mcu_charJson);
+    print_frame_masked(msg_for_main_mcu, msg_for_main_mcu_charJson, {"key_code", "mqtt_passwd"});
 }
 
 void MeshniacInterface::mqtt2_config(String current_keycode, String mqttSrvr2, String mqtt_usrnm2, String mqtt_passwd2){
@@ -1270,7 +1290,7 @@ void MeshniacInterface::mqtt2_config(String current_keycode, String mqttSrvr2, S
 
     char msg_for_main_mcu_charJson[600];
     serializeJson(msg_for_main_mcu, msg_for_main_mcu_charJson);
-    /* debug print REDACTED, unlike the mqtt_config idiom: this JSON
+    /* debug print REDACTED to a one-line summary: this JSON
        carries the LAN broker password (rotation tool - keep it off USB) */
     Serial.println("config_mqtt2 -> mqttSrvr2=" + mqttSrvr2 + " (creds redacted)");
     uart1_println(msg_for_main_mcu_charJson);
@@ -1317,11 +1337,9 @@ void MeshniacInterface::config_mesh(String current_keycode, String radio, String
     serializeJson(msg_for_main_mcu, msg_for_main_mcu_charJson);
     uart1_println(msg_for_main_mcu_charJson);
 
-    /* debug print REDACTED (same idiom as config_mqtt2): the mesh key never
-       goes to USB. Re-serialise the same document with the key masked. */
-    msg_for_main_mcu["key"] = "***";
-    serializeJson(msg_for_main_mcu, msg_for_main_mcu_charJson);
-    Serial.println(msg_for_main_mcu_charJson);
+    /* debug print MASKED: neither the mesh key nor (v2.1.0) the key code
+       goes to USB. */
+    print_frame_masked(msg_for_main_mcu, msg_for_main_mcu_charJson, {"key_code", "key"});
 }
 
 void MeshniacInterface::req_mesh_status(){

@@ -115,6 +115,15 @@ Unlock model: after a successful `keycode_verify…` the host treats itself
 as unlocked for `unlock_window` (600 s) and reuses the code
 (`get_key_code_if_unlocked()`).
 
+Secrets: `key_code`, `current_key_code`, `new_key_code`, `password`,
+`manuf_code`, `mqtt_passwd`, `mqtt_passwd2` and `key` travel in clear on
+this UART (the reply lines `keycode_verify_reply_to_host`,
+`config_key_code_reply` and `module_eeprom_to_host` carry `key_code` too).
+Keep them out of logs. The library's own USB debug prints (v2.1.0) show
+them as `"***"`; `config_mqtt2` prints a one-line summary and the received
+`keycode_verify_reply_to_host` prints `mTyp` + `data` only. The bytes sent
+to the module are unchanged.
+
 ## 6. Module → host messages
 
 | `mTyp` | Content | Host action |

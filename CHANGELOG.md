@@ -24,6 +24,19 @@ the library by tag (`https://github.com/space-monkie/meshniac-interface.git#vX.Y
   urgent and nothing else. `mesh_get_to_storage`, the `en` pair and the
   `bl` pair are unchanged. Older module firmware ignores the key (no
   urgent lane; serial hops pass it on, radio hops drop it).
+- Key codes and passwords no longer appear in the library's USB debug
+  prints. The printed copy of each config frame shows them as `"***"`:
+  `verify_unlock_code` (`key_code`), `config_key_code`
+  (`current_key_code`, `new_key_code`), `config_wifi` (`key_code`,
+  `password`), `config_timezone` (`key_code`), `manuf_dev_conf`
+  (`key_code`, `manuf_code`), `mqtt_config` (`key_code`, `mqtt_passwd`)
+  and `config_mesh` (`key_code`; `key` was already masked).
+  `mqtt2_config` keeps its one-line summary. The received
+  `keycode_verify_reply_to_host` line is no longer printed whole (it
+  carried the correct key code on success, the attempted one on failure);
+  the print is now `mTyp` + `data` (success / failed). The frames sent to
+  the module are byte-identical; only the debug line now comes right after
+  the send instead of right before it. No API change.
 
 ## v2.0.1 — 2026-10-02
 - Example sketch `examples/MinimalHost` (answers pings, sends a demo
