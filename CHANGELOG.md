@@ -12,6 +12,18 @@ the library by tag (`https://github.com/space-monkie/meshniac-interface.git#vX.Y
   0.00001 %. Same range the backend and app already use; the module's own
   generator moves to it in the same batch. No API change; still a JSON
   number. Hosts get it only when they move their pin to the next tag.
+- Optional urgent mark on three send calls:
+  `mesh_transmit_to_network(js, bool urgent = false)`,
+  `mesh_transmit_to_node_custom(to_node, js, bool urgent = false)` and
+  `mesh_transmit_as_alarm(js, bool urgent = true)`. When urgent the
+  envelope gets `"urg":1` (a JSON number, top level, never inside `js`);
+  otherwise the key is absent and the frame is unchanged. The module
+  firmware of the same batch sends marked frames in its urgent LoRa lane.
+  Defaulted trailing parameters (no overloads), so existing host calls
+  compile unchanged; just moving a host to the next tag makes every alarm
+  urgent and nothing else. `mesh_get_to_storage`, the `en` pair and the
+  `bl` pair are unchanged. Older module firmware ignores the key (no
+  urgent lane; serial hops pass it on, radio hops drop it).
 
 ## v2.0.1 — 2026-10-02
 - Example sketch `examples/MinimalHost` (answers pings, sends a demo

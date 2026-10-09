@@ -70,6 +70,7 @@ on the host (m1: NimBLE).
 |---|---|
 | `mTyp` | transport: **`pl`** = full mesh (ESP-NOW + LoRa + MQTT) · **`en`** = ESP-NOW + MQTT, no LoRa · **`bl`** = MQTT only (big payloads, `js` up to ~1200 B, no radio) |
 | `pl_id` | random 1–2147483646 (2^31-2), never 0, payload id (U2 de-duplicates via a pl_id ring shared across radio and serial ingress) |
+| `urg` | `1` (a JSON number, top level, never inside `js`) = urgent: present only when urgent; set by the sender, carried by every hop; alarms default urgent; the module maps it into on-air header byte 31 (flags bit 0) and sends the frame in its urgent LoRa lane (storage frames never). Absent = normal. Readers also accept `"1"` and `true` |
 | `prv_id`, `frID` | this node's 12-hex node ID (uppercase) |
 | `dTyp` | `net` (network), `nde` (specific node), `str` (storage) |
 | `js` | application JSON (≤ 128 B on radio; `StaticJsonDocument<200>` for pl/en in this library; ~1200 B for bl) |
@@ -81,10 +82,12 @@ on the host (m1: NimBLE).
 `andro_smRomReq` on `nde/<node>` is dropped at the module. Cloud → device
 commands must ride the `pl` envelope.
 
-Library helpers: `mesh_transmit_to_network`,
-`mesh_transmit_to_node_custom(to_node,…)`, `mesh_transmit_as_alarm`,
+Library helpers: `mesh_transmit_to_network(js, urgent = false)`,
+`mesh_transmit_to_node_custom(to_node, js, urgent = false)`,
+`mesh_transmit_as_alarm(js, urgent = true)` (`urgent` adds `"urg":1`),
 `mesh_get_to_storage` (returns the string, does not send), and the
-`mesh_en_*` / `mesh_bl_*` variants. Node-directed traffic addressed to
+`mesh_en_*` / `mesh_bl_*` variants (storage, `en` and `bl` have no urgent
+option). Node-directed traffic addressed to
 `nde/<own node id>` is surfaced as `node_payload` (`trigger_msg1/2` and the
 callbacks).
 

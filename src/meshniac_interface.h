@@ -163,10 +163,13 @@ public:
    
     void begin(long baud, int rxPin, int txPin);
    
-    void mesh_transmit_to_network(StaticJsonDocument<200> jsonPayload);
-    void mesh_transmit_to_node_custom(String to_node, StaticJsonDocument<200> jsonPayload);
+    // urgent (v2.1.0): true adds "urg":1 at the top level of the envelope; the module
+    // then sends the frame in its urgent LoRa lane. Defaults: network / node sends
+    // normal, alarms urgent. Storage, en and bl sends have no urgent option.
+    void mesh_transmit_to_network(StaticJsonDocument<200> jsonPayload, bool urgent = false);
+    void mesh_transmit_to_node_custom(String to_node, StaticJsonDocument<200> jsonPayload, bool urgent = false);
     String mesh_get_to_storage(StaticJsonDocument<200> jsonPayload, String timestampString);
-    void mesh_transmit_as_alarm(StaticJsonDocument<200> jsonPayload);
+    void mesh_transmit_as_alarm(StaticJsonDocument<200> jsonPayload, bool urgent = true);
 
     // ESP-NOW only transmit functions (mTyp: "en") — same as pl but skips LoRa
     void mesh_en_transmit_to_network(StaticJsonDocument<200> jsonPayload);

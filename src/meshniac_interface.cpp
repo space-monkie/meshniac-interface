@@ -205,7 +205,16 @@ void MeshniacInterface::uart1_println(const String &data) {
 }
 
 
-void MeshniacInterface::mesh_transmit_to_network(StaticJsonDocument<200> jsonPayload)
+// Urgent mark (v2.1.0): when urgent, "urg":1 (a JSON number) goes at the TOP
+// level of the envelope, never inside js; absent = normal. Only the three
+// pl sends below take it (defaults in the header: network / node false,
+// alarm true). The module maps it into on-air header byte 31 (flags bit 0)
+// and every hop carries it. Pool room: one more 16 B slot in the 800 B
+// documents, about 385 B used at most with a 12-char target id.
+// SYNC: module mesh_packets.h meshIsUrgent() (reader: number 1, "1" or true),
+// backend deviceInteractions.js switch / dswitch commands, app
+// local_mqtt_service.dart buildDsCommandEnvelope -- same key, number 1.
+void MeshniacInterface::mesh_transmit_to_network(StaticJsonDocument<200> jsonPayload, bool urgent)
 {
     unsigned long timestamp_long_local = rtc_ist.getEpoch();
     String timestamp_string_local = String(timestamp_long_local);
@@ -215,6 +224,7 @@ void MeshniacInterface::mesh_transmit_to_network(StaticJsonDocument<200> jsonPay
     StaticJsonDocument<800> json_injectSM_data;
     json_injectSM_data["mTyp"] = "pl";
     json_injectSM_data["pl_id"] = randomPayloadID;
+    if (urgent) json_injectSM_data["urg"] = 1;
     json_injectSM_data["prv_id"] = node_id;
     json_injectSM_data["dTyp"] = "net"; // available options --> nde,net,str
     json_injectSM_data["js"] = jsonPayload;
@@ -231,7 +241,7 @@ void MeshniacInterface::mesh_transmit_to_network(StaticJsonDocument<200> jsonPay
     }
 }
 
-void MeshniacInterface::mesh_transmit_to_node_custom(String to_node, StaticJsonDocument<200> jsonPayload)
+void MeshniacInterface::mesh_transmit_to_node_custom(String to_node, StaticJsonDocument<200> jsonPayload, bool urgent)
 {
     String pubT_local1 = "nde/" + to_node;
     int randomPayloadID1 = mesh_new_pl_id();
@@ -241,6 +251,7 @@ void MeshniacInterface::mesh_transmit_to_node_custom(String to_node, StaticJsonD
     StaticJsonDocument<800> json_formedPayload1;
     json_formedPayload1["mTyp"] = "pl";
     json_formedPayload1["pl_id"] = randomPayloadID1;
+    if (urgent) json_formedPayload1["urg"] = 1;
     json_formedPayload1["prv_id"] = node_id;
     json_formedPayload1["dTyp"] = "nde"; // available options --> nde,net,str
     json_formedPayload1["js"] = jsonPayload;
@@ -279,7 +290,7 @@ String MeshniacInterface::mesh_get_to_storage(StaticJsonDocument<200> jsonPayloa
     return string_injectSM_data;
 }
 
-void MeshniacInterface::mesh_transmit_as_alarm(StaticJsonDocument<200> jsonPayload)
+void MeshniacInterface::mesh_transmit_as_alarm(StaticJsonDocument<200> jsonPayload, bool urgent)
 {
     unsigned long timestamp_long_local = rtc_ist.getEpoch();
     String timestamp_string_local = String(timestamp_long_local);
@@ -290,6 +301,7 @@ void MeshniacInterface::mesh_transmit_as_alarm(StaticJsonDocument<200> jsonPaylo
     StaticJsonDocument<800> json_injectSM_data;
     json_injectSM_data["mTyp"] = "pl";
     json_injectSM_data["pl_id"] = randomPayloadID;
+    if (urgent) json_injectSM_data["urg"] = 1;
     json_injectSM_data["prv_id"] = node_id;
     json_injectSM_data["dTyp"] = "net"; // available options --> nde,net,str
     json_injectSM_data["js"] = jsonPayload;
