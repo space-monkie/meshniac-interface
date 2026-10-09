@@ -14,22 +14,24 @@ History before v1.0.0 lives in that monorepo.
 
 | Project | Env | Pin |
 |---|---|---|
-| HOST m1 (`HOST_m1-t2-r16_v1`, ESP32 DevKit — bench hardware; NOTHING deployed as of 2026-09-30) | `esp32doit-devkit-v1` | `#v2.0.0` |
-| HOST m2 (`host_m2`, ESP32-S3 — no hardware exists yet) | `m2_esp32s3` | `#v2.0.0` |
-| HOST M3 (`host_m3`, ESP32-S3 dev board — design phase, fw scaffold only) | `m3_esp32s3` | `#v2.0.0` |
+| HOST m1 (`HOST_m1-t2-r16_v1`, ESP32 DevKit — bench hardware; NOTHING deployed as of 2026-09-30) | `esp32doit-devkit-v1` | `#v2.1.0` |
+| HOST m2 (`host_m2`, ESP32-S3 — no hardware exists yet) | `m2_esp32s3` | `#v2.1.0` |
+| HOST M3 (`host_m3`, ESP32-S3 dev board — design phase, fw scaffold only) | `m3_esp32s3` | `#v2.1.0` |
 
 Consumed via `platformio.ini`:
 
     lib_deps =
-        https://github.com/space-monkie/meshniac-interface.git#v2.0.0
+        https://github.com/space-monkie/meshniac-interface.git#v2.1.0
 
 Nothing is deployed (Bobby, 2026-09-30): every host is bench hardware, so a
 wire change may move ALL host pins in the same release. If a host must stay
 behind, cut a new tag and move only the pins that take it — divergence is
-deliberate and visible, never silent copy drift. Current wire: **v2.0.0
-(2026-09-30)** — mesh membership by network name + password
-(`config_mesh` / `mesh_status`); slot lists and `config_mesh_key` removed.
-Design: the monorepo's `docs/design/mesh_membership_v1.md`.
+deliberate and visible, never silent copy drift. Current wire: **v2.1.0
+(2026-10-09)** — optional urgent mark `"urg":1` and `pl_id` 1 … 2^31-2,
+added on top of v2.0.0 (2026-09-30): mesh membership by network name +
+password (`config_mesh` / `mesh_status`); slot lists and
+`config_mesh_key` removed. Design: the monorepo's
+`docs/design/mesh_membership_v1.md`.
 
 ## RED-LINES (read before editing anything here)
 
@@ -51,8 +53,10 @@ Design: the monorepo's `docs/design/mesh_membership_v1.md`.
 ## Releasing a change
 
 1. Edit; keep the diff reviewable.
-2. Bump `version` in `library.json` (semver: fix = patch, feature =
-   minor, protocol break = major) and commit.
+2. Bump `version` in BOTH `library.json` (PlatformIO) and
+   `library.properties` (Arduino IDE) to the same number (semver: fix =
+   patch, feature = minor, protocol break = major), move the
+   `CHANGELOG.md` entry under that version, and commit.
 3. `git tag vX.Y.Z && git push origin main --tags`
 4. Bump the `#vX.Y.Z` pin only in the consumer(s) that should take it,
    in the monorepo.
@@ -65,6 +69,13 @@ Wire-change log:
   `b1..b5` / `l1..l5` slot lists (also gone from `module_eeprom_to_host`).
   Nothing was deployed, so all three hosts (m1, m2, M3) moved to
   `#v2.0.0` together.
+- **2026-10-09 — v2.1.0.** Additive: the network / node / alarm sends
+  take an optional `urgent` flag that adds `"urg":1` to the envelope
+  (alarms urgent by default), and every frame the library creates gets a
+  `pl_id` of 1 … 2^31-2 (was 0 … 99999). Module firmware
+  `m1-mod-2026.10.09-urg1` sends marked frames in its urgent LoRa lane;
+  older module firmware ignores the key. Nothing is deployed, so all
+  three hosts (m1, m2, M3) move to `#v2.1.0` together.
 
 ## Developing against a local checkout
 
@@ -91,7 +102,7 @@ then restore the tag pin before committing the consumer. Never commit a
 PlatformIO (recommended) — pin a tag in `platformio.ini`:
 
     lib_deps =
-        https://github.com/space-monkie/meshniac-interface.git#v2.0.1
+        https://github.com/space-monkie/meshniac-interface.git#v2.1.0
 
 Arduino IDE — download the repository as a zip from the tag you want, then
 Sketch → Include Library → Add .ZIP Library. Needs ArduinoJson 6 and

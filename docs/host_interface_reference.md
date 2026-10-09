@@ -1,7 +1,7 @@
 # Meshniac host interface — what a host must implement
 
 Updated: 2026-10-09 · Describes the wire that `MeshniacInterface` (this
-library, tag v2.0.0) drives, for anyone writing a host: the M3 dev-board
+library, tag v2.1.0) drives, for anyone writing a host: the M3 dev-board
 firmware, a Raspberry Pi on M3's DIRECT header, a customer's MCU. The
 library is the reference implementation; when this page and
 `src/meshniac_interface.cpp` disagree, the code wins and this page gets
@@ -26,7 +26,7 @@ module schematic *Cloudify Log — Main Board v1.5* (2025-03-08);
 | Levels | 3.3 V TTL UART. No 5 V on the signal pins |
 | Settings | 115200 8N1 (U2: `Serial2.begin(115200, SERIAL_8N1, 25, 26)`; m1 host: `mesh.begin(115200, RXD1=26, TXD1=25)`), no parity, **no flow control** (`UART_HW_FLOWCTRL_DISABLE`) |
 | Framing | Newline-delimited JSON. The host trims `\r`/whitespace and ignores empty lines. All module inter-MCU readers are line-framed with a per-call drain budget (4 lines / 512 B) |
-| Sizes | Host RX/TX driver buffers 2048 B, 20-event queue; host accumulates ≤ 4096 B waiting for `\n` then discards; host parses into a 3000 B JSON document. `bl` payload `js` up to ~1200 B. **Radio path: `js` ≤ 128 B hard limit** (packed structs, AES-128-CCM authenticated frames, 209 B on air for pl/en) |
+| Sizes | Host RX/TX driver buffers 2048 B, 20-event queue; host accumulates ≤ 4096 B waiting for `\n` then discards; host parses into a 3000 B JSON document. `bl` payload `js` up to ~1200 B. **Radio path: `js` ≤ 128 B hard limit** (packed structs, AES-128-CCM authenticated frames, 211 B on air for pl/en) |
 | Overflow | On `UART_FIFO_OVF` / `UART_BUFFER_FULL` the host flushes input and drops the partial line |
 | Side channel | This library mirrors node-directed payloads and mode changes to `Serial2`; on m1 nothing is attached (dead write). A host may leave `Serial2` un-begun |
 
@@ -69,7 +69,7 @@ on the host (m1: NimBLE).
 | Field | Meaning |
 |---|---|
 | `mTyp` | transport: **`pl`** = full mesh (ESP-NOW + LoRa + MQTT) · **`en`** = ESP-NOW + MQTT, no LoRa · **`bl`** = MQTT only (big payloads, `js` up to ~1200 B, no radio) |
-| `pl_id` | random 1–2147483646 (2^31-2), never 0, payload id (U2 de-duplicates via a pl_id ring shared across radio and serial ingress) |
+| `pl_id` | random 1–2147483646 (2^31-2), never 0, payload id (U2 de-duplicates via a pl_id ring shared across radio and serial ingress). A JSON integer; receivers accept 1–2147483647, anything else is "no valid id" — module firmware `m1-mod-2026.10.09-urg1` refuses radio frames without one (counted `rx_noid`, §6) |
 | `urg` | `1` (a JSON number, top level, never inside `js`) = urgent: present only when urgent; set by the sender, carried by every hop; alarms default urgent; the module maps it into on-air header byte 31 (flags bit 0) and sends the frame in its urgent LoRa lane (storage frames never). Absent = normal. Readers also accept `"1"` and `true` |
 | `prv_id`, `frID` | this node's 12-hex node ID (uppercase) |
 | `dTyp` | `net` (network), `nde` (specific node), `str` (storage) |
@@ -109,7 +109,7 @@ key-code-gated.
 | `config_mesh` | `key_code`, `radio` (`nb` = nearby ESP-NOW · `lr` = long-range LoRa), `name` (network name, ≤ 32 chars), `key` (32 hex = AES-128, same on every member of that network; `""` = clear that radio, then `name` may be `""`) | `config_mesh_reply` (`radio`, `name`; success: `key_fp` = first 8 hex of SHA-256(key), `""` when cleared; failed: `reason` = `key_code` | `bad_input` | `not_pending`). U2 validates the request and pushes an unsolicited `mesh_status` after every applied change |
 | `req_mesh_status` | — (not key-code gated) | `mesh_status` (§6) |
 | `sm_deviceMode` | `mode` | `deviceMode` |
-| `reply_espNowMcu_HMI` | — (answer to the module's ping) | — |
+| `reply_espNowMcu_HMI` | — (answer to the module's ping). This library sends it as `{"mTyp":"reply_espNowMcu_HMI "}` — **with a trailing space inside the value** (unchanged in v2.1.0). U2 matches the name without the space, so it never records the library's reply: from 5 min after module boot U2 prints an "HMI ping reply timeout" line every 10 s (its restart there is commented out, so nothing else happens). A new host should send it without the space (§7) | — |
 
 Unlock model: after a successful `keycode_verify…` the host treats itself
 as unlocked for `unlock_window` (600 s) and reuses the code
@@ -137,7 +137,7 @@ to the module are unchanged.
 | `acceptedMsg` | — | Module accepted a node message |
 | `pl` / `en` / `bl` | full envelope | If `pubT == nde/<own id>` → surface as `node_payload` |
 | `module_eeprom_to_host` | `node_id`, `key_code`, `timezone`, `offset`, `dvTyp`, `gain`, `commsValDev2` | Stores the module's persisted settings; `module_eeprom_updated` |
-| `mesh_status` | `nb_name`, `nb_key_fp`, `lr_name`, `lr_key_fp` (`""` while that radio is unconfigured), counters `rx_ok`, `rx_bad_tag`, `rx_replay`, `rx_wrong_net`, `rx_bad_len`, `tx_drop_nb`, `lr_queue_drops`, `fw` (module firmware version) | Stores the four strings and the raw line (`mesh_status_json`, for forwarding to the app); `mesh_status_updated`. Sent ~3 s after module boot, after every applied `config_mesh`, and on `req_mesh_status` |
+| `mesh_status` | `nb_name`, `nb_key_fp`, `lr_name`, `lr_key_fp` (`""` while that radio is unconfigured), counters `rx_ok`, `rx_bad_tag`, `rx_replay`, `rx_wrong_net`, `rx_bad_len`, `tx_drop_nb`, `lr_queue_drops` (LoRa queue overwrites; from `m1-mod-2026.10.09-urg1` the normal queue only), `fw` (module firmware version). From module `m1-mod-2026.10.09-urg1` also `rx_noid` (frames refused: no valid `pl_id`) and `lr_q_spill_u` (urgent frames moved to the normal LoRa queue because the 24-slot urgent queue was full); older module firmware omits both | Stores the four strings and the raw line (`mesh_status_json`, for forwarding to the app; keys the library does not read, e.g. the counters, pass through unchanged); `mesh_status_updated`. Sent ~3 s after module boot, after every applied `config_mesh`, and on `req_mesh_status` |
 | `keycode_verify_reply_to_host`, `config_*_reply`, `cofig_wifi_reply` | see §5 | `*_success` / `*_failed` triggers (`config_mesh_reply` → `mesh_config_success` with `trigger_msg2..4` = radio, name, key_fp, or `mesh_config_failed` with radio, reason) |
 | `andro_smRomReq` | `reqType` (e.g. `req_smRom_dataset1`) | App request relayed via the gateway (inside a `pl` envelope); host answers from its data |
 
@@ -147,7 +147,8 @@ to the module are unchanged.
    read lines — the module pushes `timestampToSM`, `status_to_sm` and
    periodic `ping_espNowMcu_HMI`.
 2. Answer every `ping_espNowMcu_HMI` with `{"mTyp":"reply_espNowMcu_HMI"}`
-   so the module sees a live host.
+   (no trailing space — this library's own reply has one, see §5) so the
+   module sees a live host.
 3. Learn the node ID from `timestampToSM.nodeID`; drive LEDs from
    `status_to_sm`.
 4. To send data, build the §4 envelope with `ts` from the module-seeded
