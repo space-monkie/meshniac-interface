@@ -53,6 +53,17 @@ long stringToLongOrZero(String str) {
     return result;
 }
 
+// Fresh envelope pl_id for every frame this host creates (pl, en, bl, str,
+// alarm): 1 .. 2147483646 (2^31-2). Never 0 (0 = "no id"; the module's
+// duplicate list starts as zeros) and never above 2^31-2 (the module reads
+// pl_id as a signed int; receivers accept 1 .. 2147483647). Calls
+// esp_random() directly, not Arduino random(): a host that ever called
+// randomSeed() would make random() repeat the same ids after every boot.
+// SYNC: module mesh_packets.h meshFreshPlId(), backend express-app-v2
+// deviceInteractions.js freshPlId, app local_mqtt_service.dart
+// freshPlId / kPlIdMax -- same range in all four.
+static int32_t mesh_new_pl_id() { return (int32_t)(esp_random() % 2147483646UL + 1UL); }
+
 MeshniacInterface::MeshniacInterface()
 {
 }
@@ -200,7 +211,7 @@ void MeshniacInterface::mesh_transmit_to_network(StaticJsonDocument<200> jsonPay
     String timestamp_string_local = String(timestamp_long_local);
     String pubT_local = "net/" + node_id;
 
-    int randomPayloadID = random(100000);
+    int randomPayloadID = mesh_new_pl_id();
     StaticJsonDocument<800> json_injectSM_data;
     json_injectSM_data["mTyp"] = "pl";
     json_injectSM_data["pl_id"] = randomPayloadID;
@@ -223,7 +234,7 @@ void MeshniacInterface::mesh_transmit_to_network(StaticJsonDocument<200> jsonPay
 void MeshniacInterface::mesh_transmit_to_node_custom(String to_node, StaticJsonDocument<200> jsonPayload)
 {
     String pubT_local1 = "nde/" + to_node;
-    int randomPayloadID1 = random(100000);
+    int randomPayloadID1 = mesh_new_pl_id();
     unsigned long timestamp_long_local = rtc_ist.getEpoch();
     String timestamp_string_local = String(timestamp_long_local);
 
@@ -252,7 +263,7 @@ void MeshniacInterface::mesh_transmit_to_node_custom(String to_node, StaticJsonD
 String MeshniacInterface::mesh_get_to_storage(StaticJsonDocument<200> jsonPayload, String timestampString)
 {
     String pubT_local = "str/" + node_id;
-    int randomPayloadID = random(100000);
+    int randomPayloadID = mesh_new_pl_id();
     StaticJsonDocument<800> json_injectSM_data;
     json_injectSM_data["mTyp"] = "pl";
     json_injectSM_data["pl_id"] = randomPayloadID;
@@ -275,7 +286,7 @@ void MeshniacInterface::mesh_transmit_as_alarm(StaticJsonDocument<200> jsonPaylo
 
     String pubT_local = "alm/" + node_id;
 
-    int randomPayloadID = random(100000);
+    int randomPayloadID = mesh_new_pl_id();
     StaticJsonDocument<800> json_injectSM_data;
     json_injectSM_data["mTyp"] = "pl";
     json_injectSM_data["pl_id"] = randomPayloadID;
@@ -309,7 +320,7 @@ void MeshniacInterface::mesh_en_transmit_to_network(StaticJsonDocument<200> json
     String timestamp_string_local = String(timestamp_long_local);
     String pubT_local = "net/" + node_id;
 
-    int randomPayloadID = random(100000);
+    int randomPayloadID = mesh_new_pl_id();
     StaticJsonDocument<800> json_injectSM_data;
     json_injectSM_data["mTyp"] = "en";
     json_injectSM_data["pl_id"] = randomPayloadID;
@@ -332,7 +343,7 @@ void MeshniacInterface::mesh_en_transmit_to_network(StaticJsonDocument<200> json
 void MeshniacInterface::mesh_en_transmit_to_node_custom(String to_node, StaticJsonDocument<200> jsonPayload)
 {
     String pubT_local1 = "nde/" + to_node;
-    int randomPayloadID1 = random(100000);
+    int randomPayloadID1 = mesh_new_pl_id();
     unsigned long timestamp_long_local = rtc_ist.getEpoch();
     String timestamp_string_local = String(timestamp_long_local);
 
@@ -371,7 +382,7 @@ void MeshniacInterface::mesh_bl_transmit_to_network(DynamicJsonDocument& jsonPay
     String timestamp_string_local = String(timestamp_long_local);
     String pubT_local = "net/" + node_id;
 
-    int randomPayloadID = random(100000);
+    int randomPayloadID = mesh_new_pl_id();
     DynamicJsonDocument json_injectSM_data(2048);
     json_injectSM_data["mTyp"] = "bl";
     json_injectSM_data["pl_id"] = randomPayloadID;
@@ -394,7 +405,7 @@ void MeshniacInterface::mesh_bl_transmit_to_network(DynamicJsonDocument& jsonPay
 void MeshniacInterface::mesh_bl_transmit_to_node_custom(String to_node, DynamicJsonDocument& jsonPayload)
 {
     String pubT_local1 = "nde/" + to_node;
-    int randomPayloadID1 = random(100000);
+    int randomPayloadID1 = mesh_new_pl_id();
     unsigned long timestamp_long_local = rtc_ist.getEpoch();
     String timestamp_string_local = String(timestamp_long_local);
 

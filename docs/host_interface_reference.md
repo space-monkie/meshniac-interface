@@ -1,6 +1,6 @@
 # Meshniac host interface — what a host must implement
 
-Updated: 2026-09-30 · Describes the wire that `MeshniacInterface` (this
+Updated: 2026-10-09 · Describes the wire that `MeshniacInterface` (this
 library, tag v2.0.0) drives, for anyone writing a host: the M3 dev-board
 firmware, a Raspberry Pi on M3's DIRECT header, a customer's MCU. The
 library is the reference implementation; when this page and
@@ -69,7 +69,7 @@ on the host (m1: NimBLE).
 | Field | Meaning |
 |---|---|
 | `mTyp` | transport: **`pl`** = full mesh (ESP-NOW + LoRa + MQTT) · **`en`** = ESP-NOW + MQTT, no LoRa · **`bl`** = MQTT only (big payloads, `js` up to ~1200 B, no radio) |
-| `pl_id` | random 0–99999 payload id (U2 de-duplicates via a pl_id ring shared across radio and serial ingress) |
+| `pl_id` | random 1–2147483646 (2^31-2), never 0, payload id (U2 de-duplicates via a pl_id ring shared across radio and serial ingress) |
 | `prv_id`, `frID` | this node's 12-hex node ID (uppercase) |
 | `dTyp` | `net` (network), `nde` (specific node), `str` (storage) |
 | `js` | application JSON (≤ 128 B on radio; `StaticJsonDocument<200>` for pl/en in this library; ~1200 B for bl) |

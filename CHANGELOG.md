@@ -3,6 +3,16 @@
 All notable changes to MeshniacInterface. Versions are git tags; hosts pin
 the library by tag (`https://github.com/space-monkie/meshniac-interface.git#vX.Y.Z`).
 
+## Unreleased
+- Wider message ids: every frame this library creates (`pl`, `en`, `bl`,
+  storage and alarm) now gets a `pl_id` of 1 … 2147483646 (2^31-2), never
+  0, from the ESP32 hardware random generator (was `random(100000)`,
+  0 … 99999). The chance that a new message is mistaken for a duplicate
+  (the module remembers the last 200 ids) drops from about 0.2 % to about
+  0.00001 %. Same range the backend and app already use; the module's own
+  generator moves to it in the same batch. No API change; still a JSON
+  number. Hosts get it only when they move their pin to the next tag.
+
 ## v2.0.1 — 2026-10-02
 - Example sketch `examples/MinimalHost` (answers pings, sends a demo
   reading, sets network credentials from the USB serial port).
