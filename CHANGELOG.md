@@ -31,6 +31,11 @@ own; its changes ship in `m1-mod-2026.10.11-reg1`.
 - Module firmware that knows `config_lora_region` keeps its LoRa radio off
   until a region is chosen, so a host must be on this version to turn
   LoRa on with it; older module firmware does not answer the message.
+- `config_lora_region()` sends a region longer than 8 characters as `""`
+  (the module then answers `bad_input`) and sends nothing when the frame
+  would not fit its buffer (a key code far too long; a USB note says so),
+  so a malformed input never reaches the module as a cut, unanswerable
+  frame.
 - `examples/MinimalHost`: `region <id>` command and the two triggers.
 - Docs: `docs/host_interface_reference.md` §5 command row, secrets list,
   §6 `mesh_status` fields and triggers, §7 bring-up step 8.

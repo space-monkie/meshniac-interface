@@ -537,7 +537,7 @@ void MeshniacInterface::deserialize_module_data(String module_data_json_str){
         config_lora_region_reply (v2.2.0)
         json{"mTyp":"config_lora_region_reply","status":"success","region":"<id>"}
         json{"mTyp":"config_lora_region_reply","status":"failed","region":"<id>","reason":"key_code"}
-        mesh_status (unsolicited ~3 s after module boot and after every applied config_mesh; also on req_mesh_status)
+        mesh_status (unsolicited ~3 s after module boot and after every applied config_mesh / config_lora_region; also on req_mesh_status)
         json{"mTyp":"mesh_status","nb_name":"shed-a","nb_key_fp":"A31F7C09","lr_name":"","lr_key_fp":"","rx_ok":12,"rx_bad_tag":0,"rx_replay":0,"rx_wrong_net":3,"rx_bad_len":0,"tx_drop_nb":0,"lr_queue_drops":0,"fw":"m1-mod-2026.09.30-mesh1"}
         andro_smRomReq (forwarded from app via gateway)
         json{"mTyp":"andro_smRomReq","reqType":"req_smRom_dataset1"}
@@ -924,8 +924,8 @@ void MeshniacInterface::deserialize_module_data(String module_data_json_str){
     if(msgType == "mesh_status"){
         /*
             Mesh membership + radio counters from the ESP_NOW MCU: pushed ~3 s
-            after module boot, after every applied config_mesh, and on
-            req_mesh_status. Fingerprints are "" while that radio is
+            after module boot, after every applied config_mesh /
+            config_lora_region, and on req_mesh_status. Fingerprints are "" while that radio is
             unconfigured. The raw line is kept verbatim (mesh_status_json) so
             a host can forward it to the app unchanged.
 
@@ -1383,7 +1383,7 @@ void MeshniacInterface::req_mesh_status(){
         Ask the module (ESP_NOW MCU) for its mesh membership + radio counters.
         Not key-code gated: the reply carries names and fingerprints only.
         The module also pushes mesh_status unsolicited ~3 s after boot and
-        after every applied config_mesh.
+        after every applied config_mesh / config_lora_region.
 
             ---------format---------
         1)To Module ESP_NOW MCU
@@ -1433,13 +1433,20 @@ void MeshniacInterface::config_lora_region(String current_keycode, String region
         After every applied change the module also pushes an unsolicited
         mesh_status (its "lora_region" = the active id, "" = none chosen).
     */
+    // Region ids are short (the module accepts at most 8 characters): a longer
+    // one is sent as "" so the module answers bad_input instead of the frame
+    // being cut (escaped or repeated long strings can outgrow any fixed
+    // buffer - a cut frame is invalid JSON and gets no reply at all).
     StaticJsonDocument<300> msg_for_main_mcu;
     msg_for_main_mcu["mTyp"] = "config_lora_region";
     msg_for_main_mcu["key_code"] = current_keycode;
-    msg_for_main_mcu["region"] = region;
+    msg_for_main_mcu["region"] = region.length() <= 8 ? region : String("");
 
-    // 400 > the largest text a 300 B pool can hold, so the frame is never cut
     char msg_for_main_mcu_charJson[400];
+    if (msg_for_main_mcu.overflowed() || measureJson(msg_for_main_mcu) >= sizeof(msg_for_main_mcu_charJson)) {
+        Serial.println("config_lora_region not sent: key code too long");
+        return;
+    }
     serializeJson(msg_for_main_mcu, msg_for_main_mcu_charJson);
     uart1_println(msg_for_main_mcu_charJson);
 
