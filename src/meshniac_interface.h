@@ -210,6 +210,8 @@ public:
     // its short id. The module refuses ids it does not know or its radio cannot use.
     // Reply lands in mesh_lora_region + trigger_msg1 (lora_region_config_success /
     // lora_region_config_failed). Call it only from local (Bluetooth / console) input.
+    // A region longer than 8 chars is sent as "" (the module answers bad_input); a frame
+    // that cannot fit (a key code far too long) is NOT sent: no reply, one USB line.
     void config_lora_region(String current_keycode, String region);
     int get_module_mode(); // 1->configure mode ,2->loading mode, 3->normal modes
     // void set_module_mode_to_config(); // 1->configure mode ,2->loading mode, 3->normal modes
