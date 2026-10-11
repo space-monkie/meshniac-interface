@@ -108,6 +108,7 @@ key-code-gated.
 | `config_mqtt2` (2nd / LAN broker) | `key_code`, `mqttSrvr2`, `mqtt_usrnm2`, `mqtt_passwd2` | `config_mqtt2_reply` (`mqttSrvr2`) |
 | `config_mesh` | `key_code`, `radio` (`nb` = nearby ESP-NOW · `lr` = long-range LoRa), `name` (network name, ≤ 32 chars), `key` (32 hex = AES-128, same on every member of that network; `""` = clear that radio, then `name` may be `""`) | `config_mesh_reply` (`radio`, `name`; success: `key_fp` = first 8 hex of SHA-256(key), `""` when cleared; failed: `reason` = `key_code` | `bad_input` | `not_pending`). U2 validates the request and pushes an unsolicited `mesh_status` after every applied change |
 | `req_mesh_status` | — (not key-code gated) | `mesh_status` (§6) |
+| `config_lora_region` (v2.2.0) | `key_code`, `region` (the short id of one LoRa radio region profile from the module firmware's fixed list — never a typed frequency; every node of one network must use the same id) | `config_lora_region_reply` (`region`; failed: `reason` = `key_code` · `unknown_region` (id not in this module's list) · `radio` (the module's fitted radio cannot use it) · `bad_input` (missing / too long; then `region` is `""`) · `not_pending` · `storage` (could not be saved)). U2 checks the id before the key code, stores and applies the profile, restarts its LoRa radio and pushes an unsolicited `mesh_status`. Never sent from the cloud or over the mesh: hosts send it only from their own Bluetooth / console input. Module firmware that knows this message keeps its LoRa radio **off** until a region is chosen; older module firmware does not answer it |
 | `sm_deviceMode` | `mode` | `deviceMode` |
 | `reply_espNowMcu_HMI` | — (answer to the module's ping). This library sends it as `{"mTyp":"reply_espNowMcu_HMI "}` — **with a trailing space inside the value** (unchanged in v2.1.0). U2 matches the name without the space, so it never records the library's reply: from 5 min after module boot U2 prints an "HMI ping reply timeout" line every 10 s (its restart there is commented out, so nothing else happens). A new host should send it without the space (§7) | — |
 
@@ -115,7 +116,7 @@ Unlock model: after a successful `keycode_verify…` the host treats itself
 as unlocked for `unlock_window` (600 s) and reuses the code
 (`get_key_code_if_unlocked()`).
 
-Secrets: `key_code`, `current_key_code`, `new_key_code`, `password`,
+Secrets: `key_code` (also in `config_lora_region`, v2.2.0), `current_key_code`, `new_key_code`, `password`,
 `manuf_code`, `mqtt_passwd`, `mqtt_passwd2` and `key` travel in clear on
 this UART (the reply lines `keycode_verify_reply_to_host`,
 `config_key_code_reply` and `module_eeprom_to_host` carry `key_code` too).
@@ -137,8 +138,8 @@ to the module are unchanged.
 | `acceptedMsg` | — | Module accepted a node message |
 | `pl` / `en` / `bl` | full envelope | If `pubT == nde/<own id>` → surface as `node_payload` |
 | `module_eeprom_to_host` | `node_id`, `key_code`, `timezone`, `offset`, `dvTyp`, `gain`, `commsValDev2` | Stores the module's persisted settings; `module_eeprom_updated` |
-| `mesh_status` | `nb_name`, `nb_key_fp`, `lr_name`, `lr_key_fp` (`""` while that radio is unconfigured), counters `rx_ok`, `rx_bad_tag`, `rx_replay`, `rx_wrong_net`, `rx_bad_len`, `tx_drop_nb`, `lr_queue_drops` (LoRa queue overwrites; from `m1-mod-2026.10.09-urg1` the normal queue only), `fw` (module firmware version). From module `m1-mod-2026.10.09-urg1` also `rx_noid` (frames refused: no valid `pl_id`) and `lr_q_spill_u` (urgent frames moved to the normal LoRa queue because the 24-slot urgent queue was full); older module firmware omits both | Stores the four strings and the raw line (`mesh_status_json`, for forwarding to the app; keys the library does not read, e.g. the counters, pass through unchanged); `mesh_status_updated`. Sent ~3 s after module boot, after every applied `config_mesh`, and on `req_mesh_status` |
-| `keycode_verify_reply_to_host`, `config_*_reply`, `cofig_wifi_reply` | see §5 | `*_success` / `*_failed` triggers (`config_mesh_reply` → `mesh_config_success` with `trigger_msg2..4` = radio, name, key_fp, or `mesh_config_failed` with radio, reason) |
+| `mesh_status` | `nb_name`, `nb_key_fp`, `lr_name`, `lr_key_fp` (`""` while that radio is unconfigured), counters `rx_ok`, `rx_bad_tag`, `rx_replay`, `rx_wrong_net`, `rx_bad_len`, `tx_drop_nb`, `lr_queue_drops` (LoRa queue overwrites; from `m1-mod-2026.10.09-urg1` the normal queue only), `fw` (module firmware version). From module `m1-mod-2026.10.09-urg1` also `rx_noid` (frames refused: no valid `pl_id`) and `lr_q_spill_u` (urgent frames moved to the normal LoRa queue because the 24-slot urgent queue was full); older module firmware omits both. From the module firmware that knows `config_lora_region` (v2.2.0) also `lora_region` (the active LoRa radio region profile id; `""` = none chosen, the LoRa radio is off) and `lr_air_pm` (the LoRa radio's own transmit time over the last hour, in thousandths, 0–1000; shown only, nothing is limited by it); older module firmware omits both | Stores the four strings and the raw line (`mesh_status_json`, for forwarding to the app; keys the library does not read, e.g. the counters, pass through unchanged); from v2.2.0 also `mesh_lora_region` + `mesh_lora_region_reported` (false when the line has no `lora_region` — older module firmware — so it is not mistaken for "LoRa off"); `mesh_status_updated`. Sent ~3 s after module boot, after every applied `config_mesh` / `config_lora_region`, and on `req_mesh_status` |
+| `keycode_verify_reply_to_host`, `config_*_reply`, `cofig_wifi_reply` | see §5 | `*_success` / `*_failed` triggers (`config_mesh_reply` → `mesh_config_success` with `trigger_msg2..4` = radio, name, key_fp, or `mesh_config_failed` with radio, reason; `config_lora_region_reply` (v2.2.0) → `lora_region_config_success` with `trigger_msg2` = region and `mesh_lora_region` set, or `lora_region_config_failed` with `trigger_msg2..3` = region, reason) |
 | `andro_smRomReq` | `reqType` (e.g. `req_smRom_dataset1`) | App request relayed via the gateway (inside a `pl` envelope); host answers from its data |
 
 ## 7. Minimal host behaviour (a bring-up script on a bare UART)
@@ -163,6 +164,12 @@ to the module are unchanged.
    network's members; expect `config_mesh_reply`, then `mesh_status`. Until
    a radio is configured the module does not transmit on it (`tx_drop_nb`
    counts the nearby drops).
+8. LoRa also needs a radio region (v2.2.0): module firmware that knows
+   `config_lora_region` keeps its LoRa radio off until one is chosen. After
+   unlocking, send `config_lora_region` with the region id used by every
+   node of that network; expect `config_lora_region_reply`, then
+   `mesh_status` with `lora_region`. Send it only from local input (your
+   own console / Bluetooth), never from a cloud or mesh message.
 
 ## 8. Host ↔ phone (only if a host keeps app compatibility)
 

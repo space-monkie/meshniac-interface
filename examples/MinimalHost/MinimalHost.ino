@@ -16,7 +16,12 @@
         unlock <keycode>              e.g. unlock 3535
         mesh nb <name> <32hex|->      Nearby network (ESP-NOW); "-" clears it
         mesh lr <name> <32hex|->      Long-range network (LoRa)
+        region <id>                   LoRa radio region (one id from the module's list)
         status                        ask the module for mesh_status
+
+  The LoRa radio region is a fixed profile in the module firmware, chosen by
+  its short id; every node of one network must use the same one. Module
+  firmware that knows regions keeps its LoRa radio off until one is chosen.
 
   The 32-hex key is the AES-128 key for that network. The phone app derives
   it from a human password (PBKDF2-HMAC-SHA256, salt "meshniac/v1/<nb|lr>/<name>",
@@ -50,6 +55,12 @@ static void onModuleData()
     mesh.trigger_msg1 = "";
   } else if (mesh.trigger_msg1 == "mesh_config_failed") {
     Serial.println("network NOT set: " + mesh.trigger_msg2 + " reason " + mesh.trigger_msg3);
+    mesh.trigger_msg1 = "";
+  } else if (mesh.trigger_msg1 == "lora_region_config_success") {
+    Serial.println("LoRa region set: " + mesh.trigger_msg2);
+    mesh.trigger_msg1 = "";
+  } else if (mesh.trigger_msg1 == "lora_region_config_failed") {
+    Serial.println("LoRa region NOT set: " + mesh.trigger_msg2 + " reason " + mesh.trigger_msg3);
     mesh.trigger_msg1 = "";
   } else if (mesh.trigger_msg1 == "device_unlocked_success") {
     Serial.println("unlocked");
@@ -87,10 +98,16 @@ static void handleCommand(String line)
     }
     if (key == "-") key = "";
     mesh.config_mesh(code, radio, name, key);
+  } else if (cmd == "region") {
+    String code = mesh.get_key_code_if_unlocked();
+    if (code == "locked") { Serial.println("unlock first"); return; }
+    String region = nextToken(line);
+    if (region == "") { Serial.println("usage: region <id>"); return; }
+    mesh.config_lora_region(code, region);
   } else if (cmd == "status") {
     mesh.req_mesh_status();
   } else if (cmd != "") {
-    Serial.println("commands: unlock <keycode> | mesh nb|lr <name> <32hex|-> | status");
+    Serial.println("commands: unlock <keycode> | mesh nb|lr <name> <32hex|-> | region <id> | status");
   }
 }
 

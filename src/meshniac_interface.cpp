@@ -534,6 +534,9 @@ void MeshniacInterface::deserialize_module_data(String module_data_json_str){
         config_mesh_reply
         json{"mTyp":"config_mesh_reply","status":"success","radio":"nb","name":"shed-a","key_fp":"A31F7C09"}
         json{"mTyp":"config_mesh_reply","status":"failed","radio":"nb","name":"shed-a","reason":"bad_input"}
+        config_lora_region_reply (v2.2.0)
+        json{"mTyp":"config_lora_region_reply","status":"success","region":"<id>"}
+        json{"mTyp":"config_lora_region_reply","status":"failed","region":"<id>","reason":"key_code"}
         mesh_status (unsolicited ~3 s after module boot and after every applied config_mesh; also on req_mesh_status)
         json{"mTyp":"mesh_status","nb_name":"shed-a","nb_key_fp":"A31F7C09","lr_name":"","lr_key_fp":"","rx_ok":12,"rx_bad_tag":0,"rx_replay":0,"rx_wrong_net":3,"rx_bad_len":0,"tx_drop_nb":0,"lr_queue_drops":0,"fw":"m1-mod-2026.09.30-mesh1"}
         andro_smRomReq (forwarded from app via gateway)
@@ -895,6 +898,29 @@ void MeshniacInterface::deserialize_module_data(String module_data_json_str){
             trigger_msg3 = reason_temp;
         }
     }
+    if(msgType == "config_lora_region_reply"){
+        /*
+            Reply after a config_lora_region attempt (v2.2.0; format in
+            config_lora_region()). success: the module stored and applied the
+            region profile. failed: reason = key_code | unknown_region | radio |
+            bad_input | not_pending | storage; region is "" when the request
+            itself was malformed.
+        */
+        String status = module_data_json["status"] | "";
+        String region_temp = module_data_json["region"] | "";
+        if(status == "success"){
+            mesh_lora_region = region_temp;
+            mesh_lora_region_reported = true;
+            trigger_msg1 = "lora_region_config_success";
+            trigger_msg2 = region_temp;
+        }
+        if(status == "failed"){
+            String reason_temp = module_data_json["reason"] | "";
+            trigger_msg1 = "lora_region_config_failed";
+            trigger_msg2 = region_temp;
+            trigger_msg3 = reason_temp;
+        }
+    }
     if(msgType == "mesh_status"){
         /*
             Mesh membership + radio counters from the ESP_NOW MCU: pushed ~3 s
@@ -909,9 +935,15 @@ void MeshniacInterface::deserialize_module_data(String module_data_json_str){
                 "nb_name":"<name>","nb_key_fp":"<8 hex>",
                 "lr_name":"<name>","lr_key_fp":"<8 hex>",
                 "rx_ok":n,"rx_bad_tag":n,"rx_replay":n,"rx_wrong_net":n,"rx_bad_len":n,
-                "tx_drop_nb":n,"lr_queue_drops":n,
-                "fw":"<module firmware version>"
+                "rx_noid":n,"tx_drop_nb":n,"lr_queue_drops":n,"lr_q_spill_u":n,
+                "fw":"<module firmware version>",
+                "lora_region":"<id>","lr_air_pm":n
             }
+            rx_noid / lr_q_spill_u: module firmware from the v2.1.0 batch on.
+            lora_region / lr_air_pm (v2.2.0): the active LoRa region profile id
+            ("" = none chosen, the LoRa radio is off) and the LoRa radio's share
+            of the last hour on air in thousandths; older module firmware omits
+            both. Counters are not parsed here; they pass through in the raw line.
         */
         String nb_name_temp = module_data_json["nb_name"] | "";
         String nb_key_fp_temp = module_data_json["nb_key_fp"] | "";
@@ -921,6 +953,10 @@ void MeshniacInterface::deserialize_module_data(String module_data_json_str){
         mesh_nb_key_fp = nb_key_fp_temp;
         mesh_lr_name = lr_name_temp;
         mesh_lr_key_fp = lr_key_fp_temp;
+        // v2.2.0: absent field (older module firmware) != "" (none chosen, LoRa off)
+        mesh_lora_region_reported = module_data_json.containsKey("lora_region");
+        String lora_region_temp = module_data_json["lora_region"] | "";
+        mesh_lora_region = lora_region_temp;
         mesh_status_json = module_data_json_str;
         trigger_msg1 = "mesh_status_updated";
     }
@@ -1364,6 +1400,51 @@ void MeshniacInterface::req_mesh_status(){
     serializeJson(msg_for_main_mcu, msg_for_main_mcu_charJson);
     Serial.println(msg_for_main_mcu_charJson);
     uart1_println(msg_for_main_mcu_charJson);
+}
+
+void MeshniacInterface::config_lora_region(String current_keycode, String region){
+    /*
+        v2.2.0: chooses the module's LoRa radio region - one profile from the
+        fixed list in the module firmware, picked by its short id (never a
+        typed frequency). The module checks the id first (missing / too long
+        -> bad_input, unknown -> unknown_region, not possible with its fitted
+        radio -> radio), then the key code, then stores the choice, applies it
+        and restarts its LoRa radio. Every node of one network must use the
+        same region: a node on another region may hear nothing and reports no
+        error. With module firmware that knows this message, the LoRa radio
+        stays off until a region is chosen. Call it only from the host's own
+        Bluetooth or console input - never from a cloud or mesh message.
+
+            ---------format---------
+        1)To Module ESP_NOW MCU
+        {
+            "mTyp":"config_lora_region",
+            "key_code":"<key_code>",
+            "region":"<profile id>"
+        }
+
+        2)Reply to the host
+        {
+            "mTyp":"config_lora_region_reply",
+            "status":"success/failed",
+            "region":"<profile id>",   ("" when the request itself was malformed)
+            "reason":"key_code|unknown_region|radio|bad_input|not_pending|storage"   (failed only)
+        }
+        After every applied change the module also pushes an unsolicited
+        mesh_status (its "lora_region" = the active id, "" = none chosen).
+    */
+    StaticJsonDocument<300> msg_for_main_mcu;
+    msg_for_main_mcu["mTyp"] = "config_lora_region";
+    msg_for_main_mcu["key_code"] = current_keycode;
+    msg_for_main_mcu["region"] = region;
+
+    // 400 > the largest text a 300 B pool can hold, so the frame is never cut
+    char msg_for_main_mcu_charJson[400];
+    serializeJson(msg_for_main_mcu, msg_for_main_mcu_charJson);
+    uart1_println(msg_for_main_mcu_charJson);
+
+    /* debug print MASKED: the key code never goes to USB. */
+    print_frame_masked(msg_for_main_mcu, msg_for_main_mcu_charJson, {"key_code"});
 }
 
 int MeshniacInterface::get_module_mode(){

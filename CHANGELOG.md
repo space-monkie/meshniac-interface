@@ -3,6 +3,30 @@
 All notable changes to MeshniacInterface. Versions are git tags; hosts pin
 the library by tag (`https://github.com/space-monkie/meshniac-interface.git#vX.Y.Z`).
 
+## Unreleased
+- LoRa radio region: new `config_lora_region(key_code, region)` →
+  `config_lora_region_reply` (`status`, `region`, failed: `reason` =
+  `key_code` | `unknown_region` | `radio` | `bad_input` | `not_pending` |
+  `storage`). `region` is the short id of one profile from the module
+  firmware's fixed list; the module checks it before the key code, stores
+  and applies it and pushes `mesh_status`. Triggers
+  `lora_region_config_success` (`trigger_msg2` = region) and
+  `lora_region_config_failed` (`trigger_msg2` = region, `trigger_msg3` =
+  reason). The USB debug print masks the key code. Hosts must call it only
+  from their own Bluetooth / console input, never from a cloud or mesh
+  message.
+- `mesh_status`: the library now reads the module's `lora_region` into
+  `mesh_lora_region`; `mesh_lora_region_reported` is false when the line
+  has no such field (older module firmware), so "old module" is not
+  mistaken for "LoRa off". The module's new `lr_air_pm` (LoRa transmit
+  time over the last hour, in thousandths) passes through in the raw line.
+- Module firmware that knows `config_lora_region` keeps its LoRa radio off
+  until a region is chosen, so a host must be on this version to turn
+  LoRa on with it; older module firmware does not answer the message.
+- `examples/MinimalHost`: `region <id>` command and the two triggers.
+- Docs: `docs/host_interface_reference.md` §5 command row, secrets list,
+  §6 `mesh_status` fields and triggers, §7 bring-up step 8.
+
 ## v2.1.0 — 2026-10-09
 Wire addition (minor version: hosts still on v2.0.x and older module
 firmware keep working alongside it). Pairs with module firmware

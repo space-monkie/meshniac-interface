@@ -109,6 +109,13 @@ public:
     String mesh_lr_name = "";
     String mesh_lr_key_fp = "";
     String mesh_status_json = "";      // the last raw mesh_status line, verbatim, for forwarding to the app
+    // LoRa radio region (v2.2.0): the module's active region profile id, from the
+    // last mesh_status / config_lora_region_reply; "" = none chosen (the module then
+    // keeps its LoRa radio off). mesh_lora_region_reported stays false until a
+    // mesh_status line carried the field (older module firmware omits it), so
+    // "old module" is not mistaken for "LoRa off".
+    String mesh_lora_region = "";
+    bool mesh_lora_region_reported = false;
    
 
     String node_id = "";
@@ -199,6 +206,11 @@ public:
     // identified by name + 32-hex AES-128 key. Replies land in mesh_nb_*/mesh_lr_* + trigger_msg1.
     void config_mesh(String current_keycode, String radio /*"nb"|"lr"*/, String name, String key_hex /*32 hex or ""=clear*/);
     void req_mesh_status();
+    // LoRa radio region (v2.2.0): choose one of the module's fixed region profiles by
+    // its short id. The module refuses ids it does not know or its radio cannot use.
+    // Reply lands in mesh_lora_region + trigger_msg1 (lora_region_config_success /
+    // lora_region_config_failed). Call it only from local (Bluetooth / console) input.
+    void config_lora_region(String current_keycode, String region);
     int get_module_mode(); // 1->configure mode ,2->loading mode, 3->normal modes
     // void set_module_mode_to_config(); // 1->configure mode ,2->loading mode, 3->normal modes
     // void set_module_mode_to_loading(); // 1->configure mode ,2->loading mode, 3->normal modes
