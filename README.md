@@ -14,21 +14,23 @@ History before v1.0.0 lives in that monorepo.
 
 | Project | Env | Pin |
 |---|---|---|
-| HOST m1 (`HOST_m1-t2-r16_v1`, ESP32 DevKit — bench hardware; NOTHING deployed as of 2026-09-30) | `esp32doit-devkit-v1` | `#v2.1.0` |
-| HOST m2 (`host_m2`, ESP32-S3 — no hardware exists yet) | `m2_esp32s3` | `#v2.1.0` |
-| HOST M3 (`host_m3`, ESP32-S3 dev board — design phase, fw scaffold only) | `m3_esp32s3` | `#v2.1.0` |
+| HOST m1 (`HOST_m1-t2-r16_v1`, ESP32 DevKit — bench hardware; NOTHING deployed as of 2026-09-30) | `esp32doit-devkit-v1` | `#v2.2.0` |
+| HOST m2 (`host_m2`, ESP32-S3 — no hardware exists yet) | `m2_esp32s3` | `#v2.2.0` |
+| HOST M3 (`host_m3`, ESP32-S3 dev board — design phase, fw scaffold only) | `m3_esp32s3` | `#v2.2.0` |
 
 Consumed via `platformio.ini`:
 
     lib_deps =
-        https://github.com/space-monkie/meshniac-interface.git#v2.1.0
+        https://github.com/space-monkie/meshniac-interface.git#v2.2.0
 
 Nothing is deployed (Bobby, 2026-09-30): every host is bench hardware, so a
 wire change may move ALL host pins in the same release. If a host must stay
 behind, cut a new tag and move only the pins that take it — divergence is
-deliberate and visible, never silent copy drift. Current wire: **v2.1.0
-(2026-10-09)** — optional urgent mark `"urg":1` and `pl_id` 1 … 2^31-2,
-added on top of v2.0.0 (2026-09-30): mesh membership by network name +
+deliberate and visible, never silent copy drift. Current wire: **v2.2.0
+(2026-10-11)** — LoRa radio region (`config_lora_region`, `lora_region`
+in `mesh_status`), on top of v2.1.0 (2026-10-09): optional urgent mark
+`"urg":1` and `pl_id` 1 … 2^31-2, and v2.0.0 (2026-09-30): mesh
+membership by network name +
 password (`config_mesh` / `mesh_status`); slot lists and
 `config_mesh_key` removed. Design: the monorepo's
 `docs/design/mesh_membership_v1.md`.
@@ -76,6 +78,16 @@ Wire-change log:
   `m1-mod-2026.10.09-urg1` sends marked frames in its urgent LoRa lane;
   older module firmware ignores the key. Nothing is deployed, so all
   three hosts (m1, m2, M3) move to `#v2.1.0` together.
+  (That module build was never released on its own: it ships as
+  `m1-mod-2026.10.11-reg1`, see v2.2.0.)
+- **2026-10-11 — v2.2.0.** Additive: `config_lora_region` /
+  `config_lora_region_reply` choose the module's LoRa radio region (one
+  profile id from the module firmware's fixed list); `mesh_status` carries
+  `lora_region` and `lr_air_pm`. Module firmware `m1-mod-2026.10.11-reg1`
+  keeps its LoRa radio off until a region is chosen, so a host needs this
+  version to turn LoRa on with it; older module firmware does not answer
+  the message. Nothing is deployed, so all three hosts (m1, m2, M3) move
+  to `#v2.2.0` together.
 
 ## Developing against a local checkout
 
@@ -102,7 +114,7 @@ then restore the tag pin before committing the consumer. Never commit a
 PlatformIO (recommended) — pin a tag in `platformio.ini`:
 
     lib_deps =
-        https://github.com/space-monkie/meshniac-interface.git#v2.1.0
+        https://github.com/space-monkie/meshniac-interface.git#v2.2.0
 
 Arduino IDE — download the repository as a zip from the tag you want, then
 Sketch → Include Library → Add .ZIP Library. Needs ArduinoJson 6 and

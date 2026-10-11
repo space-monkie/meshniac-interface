@@ -1,7 +1,7 @@
 {
   "name": "MeshniacInterface",
-  "version": "2.1.0",
-  "description": "Host-side UART bridge to the Meshniac flexible mesh network module (ESP-NOW + LoRa mesh, MQTT gateway): framing, JSON message handling, RTC seeding, configuration commands (Wi-Fi, MQTT, timezone, network name + password) and callbacks for the host firmware.",
+  "version": "2.2.0",
+  "description": "Host-side UART bridge to the Meshniac flexible mesh network module (ESP-NOW + LoRa mesh, MQTT gateway): framing, JSON message handling, RTC seeding, configuration commands (Wi-Fi, MQTT, timezone, network name + password, LoRa radio region) and callbacks for the host firmware.",
   "keywords": ["meshniac", "mesh", "uart", "esp32", "iot"],
   "repository": { "type": "git", "url": "https://github.com/space-monkie/meshniac-interface.git" },
   "authors": [{ "name": "Bobby Jose", "maintainer": true }],

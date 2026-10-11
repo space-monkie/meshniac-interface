@@ -3,7 +3,15 @@
 All notable changes to MeshniacInterface. Versions are git tags; hosts pin
 the library by tag (`https://github.com/space-monkie/meshniac-interface.git#vX.Y.Z`).
 
-## Unreleased
+## v2.2.0 — 2026-10-11
+Wire addition (minor version). Pairs with module firmware
+`m1-mod-2026.10.11-reg1`. With that module firmware the LoRa radio stays
+off until a region is chosen with `config_lora_region`, which only a
+host on v2.2.0 can send: hosts on v2.1.0 or older keep working with it
+but cannot turn its LoRa radio on. Older module firmware does not answer
+`config_lora_region` (the call then gets no reply). The module build
+named under v2.1.0 (`m1-mod-2026.10.09-urg1`) was never released on its
+own; its changes ship in `m1-mod-2026.10.11-reg1`.
 - LoRa radio region: new `config_lora_region(key_code, region)` →
   `config_lora_region_reply` (`status`, `region`, failed: `reason` =
   `key_code` | `unknown_region` | `radio` | `bad_input` | `not_pending` |
