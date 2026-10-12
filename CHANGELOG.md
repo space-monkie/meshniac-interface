@@ -10,6 +10,8 @@ the library by tag (`https://github.com/space-monkie/meshniac-interface.git#vX.Y
   `lrb_rx`, `lrb_drop`, `lrb_air_pm`. The library passes them through in
   the raw line (`mesh_status_json`) as it does every key it does not read;
   the line can now exceed 512 characters, so hosts forward it whole.
+- Reference §5: from that module firmware the text `lrb_` is reserved — the
+  module ignores a host line containing it (no reply).
 
 ## v2.2.0 — 2026-10-11
 Wire addition (minor version). Pairs with module firmware
