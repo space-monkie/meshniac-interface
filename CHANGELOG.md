@@ -6,7 +6,7 @@ the library by tag (`https://github.com/space-monkie/meshniac-interface.git#vX.Y
 ## Unreleased (docs only, no code change, no new tag)
 - Reference §6: the `mesh_status` keys of module firmware
   `m1-mod-2026.10.12-rb1` — `lrb` (the module's second LoRa radio: `""` |
-  `ok` | `off` | `fail` | `radio`) and, while it reports, `lrb_tx`,
+  `lost` | `wait` | `ok` | `off` | `fail` | `radio`) and, while it reports, `lrb_tx`,
   `lrb_rx`, `lrb_drop`, `lrb_air_pm`. The library passes them through in
   the raw line (`mesh_status_json`) as it does every key it does not read;
   the line can now exceed 512 characters, so hosts forward it whole.
